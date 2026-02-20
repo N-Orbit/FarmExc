@@ -282,7 +282,10 @@ fn test_batch_grant_vesting_happy_path() {
         duration: 2000,
     });
 
-    let result = client.batch_grant_vesting(&admin, &requests);
+    let result = client
+        .try_batch_grant_vesting(&admin, &requests)
+        .expect("host error calling batch_grant_vesting")
+        .expect("contract returned error in happy-path batch_grant_vesting");
 
     assert_eq!(result.successful_grants.len(), 2);
     assert_eq!(result.failed_grants.len(), 2);

@@ -34,6 +34,7 @@ import { GdprModule } from './gdpr/gdpr.module';
 import { Consent } from './gdpr/entities/consent.entity';
 import { VoiceJob } from './voice/entities/voice-job.entity';
 import { ThrottleModule } from './throttle/throttle.module';
+import { GraphQLModule } from './graphql/graphql.module';
 
 
 @Module({
@@ -83,6 +84,7 @@ import { ThrottleModule } from './throttle/throttle.module';
     AuditModule,
     GdprModule,
     ThrottleModule,
+    GraphQLModule,
   ],
 
   controllers: [AppController],

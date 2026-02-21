@@ -1,19 +1,6 @@
 use soroban_sdk::{
-    contracttype, Address, Env, Map, Symbol, Val, Vec, IntoVal,
+    Address, Env, Map, Symbol, Val, Vec, IntoVal,
 };
-
-/// Standardized event structure for consistent indexing
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct StandardEvent {
-    pub event_type: Symbol,
-    pub contract_address: Address,
-    pub user_address: Option<Address>,
-    pub data: Vec<Val>,
-    pub metadata: Map<Symbol, Vec<Val>>,
-    pub timestamp: u64,
-    pub version: u32,
-}
 
 /// Standardized event emitter utility
 pub struct EventEmitter;
@@ -25,23 +12,21 @@ impl EventEmitter {
     pub fn emit_standard(
         env: &Env,
         event_type: Symbol,
-        user_address: Option<Address>,
+        user_address: Address,
         data: Vec<Val>,
         metadata: Map<Symbol, Vec<Val>>,
     ) {
-        let event = StandardEvent {
-            event_type: event_type.clone(),
-            contract_address: env.current_contract_address(),
-            user_address,
-            data,
-            metadata,
-            timestamp: env.ledger().timestamp(),
-            version: Self::CURRENT_VERSION,
-        };
-
+        // Publish standardized event with structured data
         env.events().publish(
-            (Symbol::new(env, "stellara_event"), event_type),
-            event,
+            (Symbol::new(env, "stellara_event"), event_type.clone()),
+            (
+                env.current_contract_address(),
+                user_address,
+                data,
+                metadata,
+                env.ledger().timestamp(),
+                Self::CURRENT_VERSION,
+            ),
         );
     }
 
@@ -57,7 +42,7 @@ impl EventEmitter {
         metadata.set(Symbol::new(env, "to"), Vec::from_array(env, [to.into_val(env)]));
         metadata.set(Symbol::new(env, "token"), Vec::from_array(env, [token.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "transfer"), Some(from.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "transfer"), from.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -78,7 +63,7 @@ impl EventEmitter {
         metadata.set(Symbol::new(env, "to"), Vec::from_array(env, [spender.into_val(env)]));
         metadata.set(Symbol::new(env, "token"), Vec::from_array(env, [token.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "approve"), Some(from.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "approve"), from.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -102,7 +87,7 @@ impl EventEmitter {
             metadata.set(Symbol::new(env, "reason"), Vec::from_array(env, [r.clone().into_val(env)]));
         }
 
-        Self::emit_standard(env, Symbol::new(env, "mint"), Some(to.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "mint"), to.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -122,7 +107,7 @@ impl EventEmitter {
         metadata.set(Symbol::new(env, "from"), Vec::from_array(env, [from.into_val(env)]));
         metadata.set(Symbol::new(env, "token"), Vec::from_array(env, [token.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "burn"), Some(from.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "burn"), from.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -140,7 +125,7 @@ impl EventEmitter {
         metadata.set(Symbol::new(env, "from"), Vec::from_array(env, [old_admin.into_val(env)]));
         metadata.set(Symbol::new(env, "to"), Vec::from_array(env, [new_admin.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "admin_changed"), Some(old_admin.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "admin_changed"), old_admin.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -157,7 +142,7 @@ impl EventEmitter {
         let mut metadata = Map::new(env);
         metadata.set(Symbol::new(env, "to"), Vec::from_array(env, [user.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "auth_changed"), Some(user.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "auth_changed"), user.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -176,7 +161,7 @@ impl EventEmitter {
         let mut metadata = Map::new(env);
         metadata.set(Symbol::new(env, "proposal_id"), Vec::from_array(env, [proposal_id.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "propose"), Some(proposer.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "propose"), proposer.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(
@@ -194,7 +179,7 @@ impl EventEmitter {
         let mut metadata = Map::new(env);
         metadata.set(Symbol::new(env, "proposal_id"), Vec::from_array(env, [proposal_id.into_val(env)]));
 
-        Self::emit_standard(env, Symbol::new(env, "execute"), Some(executor.clone()), data, metadata);
+        Self::emit_standard(env, Symbol::new(env, "execute"), executor.clone(), data, metadata);
         
         // Also emit legacy event for backward compatibility
         env.events().publish(

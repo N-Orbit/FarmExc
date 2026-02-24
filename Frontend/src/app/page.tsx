@@ -6,6 +6,9 @@ import { motion, type Variants } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import Navbar from '@/components/Navigation/Navbar';
+import { HeroSection } from '@/components/sections/HeroSection';
+import { AiAssistant } from '@/components/section/ai-assistant';
+import { AIAssistantSection } from '@/components/sections/AIAssistantSection';
 
 export default function Home() {
   const containerVariants: Variants = {
@@ -63,43 +66,13 @@ export default function Home() {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-            className="text-center"
-          >
-            <motion.h1
-              variants={itemVariants}
-              className="text-5xl md:text-7xl font-bold text-gray-900 mb-6"
-            >
-              Stellara <span className="text-blue-600">AI</span>
-            </motion.h1>
-            <motion.p
-              variants={itemVariants}
-              className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto mb-8 leading-relaxed"
-            >
-              The intelligent Web3 crypto academy built on the Stellar ecosystem. 
-              Start your journey into cryptocurrency and blockchain today.
-            </motion.p>
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row gap-4 justify-center"
-            >
-              <Button variant="primary" size="lg" className="px-8">
-                Get Started Free
-              </Button>
-              <Link href="/about">
-                <Button variant="outline" size="lg" className="px-8">
-                  Learn More
-                </Button>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      <HeroSection />
+
+      {/* AI Assistant Info Section */}
+      <AiAssistant />
+
+      {/* AI Assistant Interactive Section */}
+      <AIAssistantSection />
 
       {/* Features Section */}
       <section className="py-20 px-4">

@@ -6,7 +6,18 @@ export default {
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        brand: {
+          blue: '#2228D6',
+        },
+      },
+      maxWidth: {
+        '160': '40rem',
+        '165': '41.25rem',
+        '355': '88.75rem',
+      },
+    },
   },
   plugins: [],
 };

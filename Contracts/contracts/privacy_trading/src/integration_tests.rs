@@ -2,7 +2,7 @@
 extern crate std;
 
 use super::*;
-use soroban_sdk::{testutils::Address as _, Address, Env, Symbol, BytesN, TryFromVal, TryIntoVal};
+use soroban_sdk::{testutils::Address as _, Address, Env, Symbol, BytesN, TryFromVal, TryIntoVal, Val};
 use soroban_sdk::testutils::Events;
 use shared::privacy::{utils, PrivacyPool};
 
@@ -108,27 +108,29 @@ fn test_full_integration_flow() {
     let mut proof_root: Option<BytesN<32>> = None;
 
     for (contract, topics, data) in events.iter() {
-        std::println!("Event: contract={:?}, topics={:?}, data={:?}", contract, topics, data);
+                std::println!("Event: contract={:?}, topics={:?}, data={:?}", contract, topics, data);
 
-        if topics.len() >= 2 {
-             let topic0: Symbol = Symbol::try_from_val(&env, &topics.get(0).unwrap()).unwrap();
-             if topic0 == Symbol::new(&env, "debug_verify") {
-                 let topic1: Symbol = Symbol::try_from_val(&env, &topics.get(1).unwrap()).unwrap();
-                 if topic1 == Symbol::new(&env, "fail_root") {
-                     std::println!("Failure: Root mismatch!");
-                 }
-                 if topic1 == Symbol::new(&env, "fail_proof") {
-                     std::println!("Failure: Proof invalid!");
-                 }
-                 
-                 if topic1 == Symbol::new(&env, "root") {
-                     root_hash = Some(data.try_into_val(&env).unwrap());
-                 } else if topic1 == Symbol::new(&env, "proof") {
-                     proof_root = Some(data.try_into_val(&env).unwrap());
-                 }
-             }
-        }
-    }
+                if topics.len() >= 2 {
+                     let topic0: Symbol = Symbol::try_from_val(&env, &topics.get(0).unwrap()).unwrap();
+                     if topic0 == Symbol::new(&env, "debug_verify") {
+                         let topic1: Symbol = Symbol::try_from_val(&env, &topics.get(1).unwrap()).unwrap();
+                         if topic1 == Symbol::new(&env, "fail_root") {
+                             std::println!("Failure: Root mismatch!");
+                         }
+                         if topic1 == Symbol::new(&env, "fail_proof") {
+                             std::println!("Failure: Proof invalid!");
+                         }
+                         
+                         if topic1 == Symbol::new(&env, "root") {
+                             let val: Val = data.try_into_val(&env).unwrap();
+                             root_hash = Some(val.try_into_val(&env).unwrap());
+                         } else if topic1 == Symbol::new(&env, "proof") {
+                             let val: Val = data.try_into_val(&env).unwrap();
+                             proof_root = Some(val.try_into_val(&env).unwrap());
+                         }
+                     }
+                }
+            }
     
     // If we found them, assert equality
     if let (Some(r), Some(p)) = (root_hash, proof_root) {

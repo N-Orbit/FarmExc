@@ -1,109 +1,120 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { useUiStore } from '@/store/ui-store';
+
+const navItems = [
+  { label: 'Academy', href: '#' },
+  { label: 'AI Assistant', href: '#' },
+  { label: 'Community', href: '#' },
+  { label: 'Trade', href: '#' },
+  { label: 'News', href: '#' },
+];
 
 const Navbar: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuOpen = useUiStore(state => state.mobileMenuOpen);
+  const toggleMobileMenu = useUiStore(state => state.toggleMobileMenu);
+  const closeMobileMenu = useUiStore(state => state.closeMobileMenu);
 
-  const navItems = [
-    { label: 'Home', href: '/' },
-    { label: 'About', href: '/about' },
-    { label: 'Learn', href: '/learn' },
-    { label: 'Community', href: '/community' },
-  ];
+  useEffect(() => {
+    const onResize = () => {
+      if (window.innerWidth >= 1024) {
+        closeMobileMenu();
+      }
+    };
+
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [closeMobileMenu]);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">S</span>
-            </div>
-            <span className="text-xl font-bold text-gray-900">Stellara</span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-
-          {/* CTA Button */}
-          <div className="hidden md:block">
-            <Button variant="primary" size="sm">
-              Get Started
-            </Button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    <header className="sticky top-0 z-50 px-4 pt-5 sm:px-6 lg:px-10">
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="relative overflow-hidden rounded-full border border-white/20 bg-[#1D3DFF] px-4 py-3 shadow-[0_14px_40px_rgba(8,14,58,0.35)] backdrop-blur">
+          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white/15 to-transparent" />
+          <div className="relative flex items-center justify-between gap-3">
+            <Link
+              href="/"
+              className="text-base font-bold tracking-tight text-white sm:text-lg"
             >
-              {isMobileMenuOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
-        </div>
+              Stellara AI
+            </Link>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="md:hidden py-4 border-t border-gray-200"
-          >
-            <div className="flex flex-col space-y-3">
-              {navItems.map((item) => (
-                <Link
+            <nav className="hidden items-center gap-6 lg:flex">
+              {navItems.map(item => (
+                <a
                   key={item.label}
                   href={item.href}
-                  className="text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200"
-                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-sm font-medium text-white/90 transition hover:text-white"
                 >
                   {item.label}
-                </Link>
+                </a>
               ))}
-              <Button variant="primary" size="sm" className="w-full">
-                Get Started
+            </nav>
+
+            <div className="hidden lg:block">
+              <Button
+                variant="wallet"
+                size="sm"
+                className="rounded-full border border-white/60 px-5 text-sm font-medium"
+              >
+                Connect Wallet
               </Button>
             </div>
-          </motion.div>
-        )}
+
+            <button
+              type="button"
+              onClick={toggleMobileMenu}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/60 lg:hidden"
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <span
+                className={`absolute h-0.5 w-5 bg-white transition ${mobileMenuOpen ? 'rotate-45' : '-translate-y-1.5'}`}
+              />
+              <span
+                className={`absolute h-0.5 w-5 bg-white transition ${mobileMenuOpen ? '-rotate-45' : 'translate-y-1.5'}`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="mt-3 rounded-3xl border border-white/10 bg-[#090B1E]/95 p-6 shadow-xl lg:hidden"
+            >
+              <nav className="flex flex-col gap-4">
+                {navItems.map(item => (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={closeMobileMenu}
+                    className="border-b border-white/10 pb-3 text-sm font-medium text-white"
+                  >
+                    {item.label}
+                  </a>
+                ))}
+              </nav>
+              <Button
+                variant="wallet"
+                className="mt-6 w-full rounded-full border border-white/60 py-2.5"
+                onClick={closeMobileMenu}
+              >
+                Connect Wallet
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </nav>
+    </header>
   );
 };
 

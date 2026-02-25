@@ -1,64 +1,96 @@
-import Image from "next/image";
-import { Button } from "@/components/ui/Button";
-import { Container } from "@/components/ui/Container";
+import Link from 'next/link';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/Button';
 
 const featurePills = [
-  { label: "AI-Powered Crypto Education", icon: "/Aipowered.png" },
-  { label: "Stellar Blockchain", icon: "/stellaricon.png" },
-  { label: "Community & Social", icon: "/community.png" },
-  { label: "Trading & Wallet", icon: "/tradingicon.png" },
+  { label: 'AI-Powered Crypto Education', icon: '/Aipowered.png' },
+  { label: 'Stellar Blockchain', icon: '/stellaricon.png' },
+  { label: 'Community & Social', icon: '/community.png' },
+  { label: 'Trading & Wallet', icon: '/tradingicon.png' },
 ];
 
 export function HeroSection() {
   return (
-    <section className="pb-16 pt-12 sm:pb-20 sm:pt-14 lg:pb-24">
-      <Container>
-        <div className="grid items-center gap-12 lg:grid-cols-[1.04fr_1fr]">
-          <div className="max-w-165">
-            <h1 className="font-normal text-[2.5rem] leading-[100%] sm:text-[3.4rem] lg:text-[3rem]">
-              <span className="text-brand-blue">Learn.</span> Trade. Connect.
+    <section className="relative overflow-hidden px-4 pb-16 pt-10 sm:px-6 sm:pb-20 lg:px-10 lg:pt-14">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,rgba(29,61,255,0.24),transparent_40%),radial-gradient(circle_at_20%_20%,rgba(78,198,255,0.2),transparent_35%),linear-gradient(180deg,#0B1023_0%,#12193A_58%,#0B1023_100%)]" />
+      <div className="mx-auto w-full max-w-6xl">
+        <div className="grid items-center gap-10 lg:grid-cols-[1fr_1.04fr]">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55 }}
+            className="max-w-2xl"
+          >
+            <h1 className="text-4xl font-semibold leading-tight text-white sm:text-5xl lg:text-6xl">
+              <span className="text-[#6AA2FF]">Learn.</span> Trade. Connect.
               <br />
-              Powered by AI on <span className="text-brand-blue">Stellar</span>.
+              Powered by AI on <span className="text-[#6AA2FF]">Stellar</span>.
             </h1>
-            <p className="mt-7 max-w-160 text-[1.45rem] font-normal leading-tight text-white/90 sm:text-[1.55rem] lg:text-[1.75rem]">
-              Stellara AI is an all-in-one Web3 academy combining AI-powered
-              learning, social crypto insights, and real on-chain trading -
-              built on Stellar.
+            <p className="mt-6 max-w-x  xl text-base leading-relaxed text-slate-200 sm:text-lg">
+              Stellara AI is an all-in-one Web3 academy combining conversational
+              guidance, social crypto insights, and real on-chain trading in one
+              platform.
             </p>
-            <div className="mt-9 flex flex-wrap items-center gap-3 sm:gap-4">
-              <Button variant="primary">Get Started</Button>
-              <Button variant="secondary">Learn More</Button>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Button
+                variant="wallet"
+                className="rounded-full bg-[#141DC4]! text-black! px-7 py-3 text-sm font-semibold hover:bg-[#2F4FFB]!"
+              >
+                Get Started
+              </Button>
+              <Link href="/about">
+                <Button
+                  variant="wallet"
+                  className="rounded-full border border-white/60 px-7 py-3 text-sm font-semibold"
+                >
+                  Learn More
+                </Button>
+              </Link>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="relative mx-auto h-[500px] w-full max-w-[620px] sm:h-[600px] lg:h-[700px] lg:w-[1200px]">
-            <div className="absolute inset-0 rounded-[42px] bg-[radial-gradient(circle_at_50%_45%,rgba(34,40,214,0.35),rgba(0,0,0,0.8)_58%)] blur-3xl" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="relative mx-auto h-90 w-full max-w-170 overflow-hidden rounded-[30px]  bg-[#0F1430] shadow-[0_30px_90px_rgba(10,14,45,0.55)] sm:h-115 lg:h-140"
+          >
+            <div className="absolute inset-0 border-0" />
             <Image
               src="/hero-image.jpg"
-              alt="Stellara AI hero visual"
+              alt="Stellara conversational dashboard preview"
               fill
-              sizes="(max-width: 1023px) 100vw, 920px"
-              className="object-cover"
+              className="object-cover opacity-90 border-0"
+              sizes="(max-width: 1024px) 100vw, 680px"
               priority
             />
-          </div>
+          </motion.div>
         </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-8 pt-8 text-[1.3rem] text-white/90 sm:text-[1.45rem]">
-          {featurePills.map((feature) => (
-            <div key={feature.label} className="flex items-center gap-1">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mt-10 flex flex-wrap items-center justify-center  sm:gap-4"
+        >
+          {featurePills.map(item => (
+            <div
+              key={item.label}
+              className="inline-flex items-center m-4 gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs text-slate-100 backdrop-blur sm:text-sm"
+            >
               <Image
-                src={feature.icon}
-                alt={`${feature.label} icon`}
-                width={20}
-                height={20}
-                className="h-5 w-5 object-contain"
+                src={item.icon}
+                alt={`${item.label} icon`}
+                width={18}
+                height={18}
+                className="h-4.5 w-4.5 object-contain"
               />
-              <span>{feature.label}</span>
+              <span>{item.label}</span>
             </div>
           ))}
-        </div>
-      </Container>
+        </motion.div>
+      </div>
     </section>
   );
 }

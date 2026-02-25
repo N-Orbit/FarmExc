@@ -177,6 +177,25 @@ impl TokenContract {
     pub fn total_supply(env: Env) -> i128 {
         storage::total_supply(&env)
     }
+
+    pub fn state_commitment(env: Env, key: Symbol, subject: Val) -> BytesN<32> {
+        let k = Symbol::new(&env, "balance");
+        if key == k {
+            let tuple: (Address, i128) = <(Address, i128)>::try_from_val(&env, &subject).unwrap();
+            let actual = storage::balance_of(&env, &tuple.0);
+            if actual != tuple.1 {
+                panic!("MISMATCH");
+            }
+            return compute_commitment(&env, &env.current_contract_address(), &key, &subject, env.ledger().sequence());
+        }
+        panic!("UNSUPPORTED");
+    }
+
+    pub fn get_balance_proof(env: Env, id: Address) -> StateProof {
+        let bal = storage::balance_of(&env, &id);
+        let subject = (id, bal).into_val(&env);
+        make_proof(&env, &env.current_contract_address(), &Symbol::new(&env, "balance"), &subject)
+    }
 }
 
 fn ensure_nonnegative(amount: i128) {

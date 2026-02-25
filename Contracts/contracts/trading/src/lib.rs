@@ -115,6 +115,19 @@ impl UpgradeableTradingContract {
         Ok(())
     }
 
+    pub fn trust_contract(env: Env, contract: Address) {
+        trust_add(&env, &contract);
+    }
+
+    pub fn verify_external_balance(env: Env, token: Address, holder: Address, expected: i128) -> bool {
+        if !is_trusted(&env, &token) {
+            return false;
+        }
+        let key = Symbol::new(&env, "balance");
+        let subject = (holder, expected).into_val(&env);
+        verify_with_contract(&env, &token, &key, &subject)
+    }
+
     /// Execute a trade with fee collection
     pub fn trade(
         env: Env,

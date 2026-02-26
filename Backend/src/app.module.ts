@@ -20,6 +20,7 @@ import { AuthModule } from './auth/auth.module';
 import { MarketDataModule } from './market-data/market-data.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { PersonalizationModule } from './personalization/personalization.module';
+import { GraphqlModule } from './graphql/graphql.module';
 
 import { RolesGuard } from './guards/roles.guard';
 
@@ -36,10 +37,7 @@ import { GdprModule } from './gdpr/gdpr.module';
 import { Consent } from './gdpr/entities/consent.entity';
 import { VoiceJob } from './voice/entities/voice-job.entity';
 import { ThrottleModule } from './throttle/throttle.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { Notification } from './modules/notifications/entities/notification.entity';
-import { NotificationPreference } from './modules/notifications/entities/notification-preference.entity';
-import { NotificationTemplate } from './modules/notifications/entities/notification-template.entity';
+import { ObservabilityModule } from './observability/observability.module';
 import { TenantModule } from './tenancy/tenant.module';
 import { Tenant } from './tenancy/entities/tenant.entity';
 import { TenantConfig } from './tenancy/entities/tenant-config.entity';
@@ -55,7 +53,6 @@ import { UserEvent } from './personalization/entities/user-event.entity';
 import { PersonalizationRule } from './personalization/entities/personalization-rule.entity';
 import { Experiment } from './personalization/entities/experiment.entity';
 import { ExperimentAssignment } from './personalization/entities/experiment-assignment.entity';
-
 
 @Module({
   imports: [
@@ -96,7 +93,7 @@ import { ExperimentAssignment } from './personalization/entities/experiment-assi
       }),
       useFactory: (configService: ConfigService) => {
         const dbType = configService.get('DB_TYPE') || 'sqlite';
-        
+
         const baseConfig: any = {
           type: dbType,
           synchronize: configService.get('NODE_ENV') === 'development',
@@ -132,13 +129,15 @@ import { ExperimentAssignment } from './personalization/entities/experiment-assi
         };
 
         if (dbType === 'sqlite') {
-          baseConfig.database = configService.get('DB_DATABASE') || './stellar-events.db';
+          baseConfig.database =
+            configService.get('DB_DATABASE') || './stellar-events.db';
         } else {
           baseConfig.host = configService.get('DB_HOST') || 'localhost';
           baseConfig.port = configService.get('DB_PORT') || 5432;
           baseConfig.username = configService.get('DB_USERNAME') || 'postgres';
           baseConfig.password = configService.get('DB_PASSWORD') || 'password';
-          baseConfig.database = configService.get('DB_DATABASE') || 'stellara_workflows';
+          baseConfig.database =
+            configService.get('DB_DATABASE') || 'stellara_workflows';
         }
 
         return baseConfig;
@@ -155,12 +154,13 @@ import { ExperimentAssignment } from './personalization/entities/experiment-assi
     AuditModule,
     GdprModule,
     ThrottleModule,
-    NotificationsModule,
+    ObservabilityModule,
     TenantModule,
     AnalyticsModule,
     PersonalizationModule,
     BlockchainModule,
     WebsocketModule,
+    GraphqlModule,
   ],
 
   controllers: [AppController],

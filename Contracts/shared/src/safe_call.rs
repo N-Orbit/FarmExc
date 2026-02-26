@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Env, Symbol, Val, Vec, Error};
+use soroban_sdk::{Address, Env, InvokeError, Symbol, Val, Vec, Error};
 
 pub mod errors {
     pub const CALL_FAILED: u32 = 2001;
@@ -26,21 +26,20 @@ pub fn safe_invoke(
     // or checking ledger entries, but try_call handles non-existence as an error.
 
     // 2. Try Call
-    // invoke_contract_try returns Result<Val, Error>
-    // We map generic errors to our specific codes if needed, or propagate.
+    // try_invoke_contract now returns Result<Result<Val, Error>, InvokeError>
+    // The outer Result handles invocation errors, inner Result handles contract errors
     
-    // Explicitly type the result to see what compiler thinks
-    let res: Result<Val, Error> = env.try_invoke_contract(contract, func, args);
+    let res = env.try_invoke_contract::<Val, Error>(contract, func, args);
 
     match res {
-        Ok(val) => Ok(val),
-        Err(e) => {
-            // Log the error for debugging
-            // env.events().publish((Symbol::new(env, "call_failed"),), e);
-            
-            // In a real module we might inspect `e` to see if it's a missing contract vs logic error.
-            // For now, we wrap it.
+        Ok(Ok(val)) => Ok(val),
+        Ok(Err(_contract_error)) => {
+            // Contract executed but returned an error
             Err(errors::CALL_FAILED)
+        }
+        Err(_invoke_error) => {
+            // Failed to invoke (contract not found, etc.)
+            Err(errors::CONTRACT_NOT_FOUND)
         }
     }
 }

@@ -381,10 +381,10 @@ jobs:
       - name: Package application
         working-directory: ${{ env.WORKING_DIRECTORY }}
         run: |
-          mkdir -p dist/package
-          cp -r dist/* dist/package/
-          cp package.json package-lock.json dist/package/
-          cd dist/package
+          mkdir -p package
+          cp -r dist package/
+          cp package.json package-lock.json package/
+          cd package
           npm ci --production
           cd ..
           tar -czf backend-${{ steps.version.outputs.version }}.tar.gz package/
@@ -393,7 +393,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-build-${{ steps.version.outputs.version }}
-          path: ${{ env.WORKING_DIRECTORY }}/dist/backend-*.tar.gz
+          path: ${{ env.WORKING_DIRECTORY }}/backend-*.tar.gz
           retention-days: 30
 
       - name: Docker meta

@@ -18,10 +18,10 @@ const Navbar: React.FC = () => {
 
   return (
     <nav className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4">
-      <div className="w-full max-w-5xl bg-[#0012FF] rounded-full px-6 py-2 flex items-center justify-between shadow-2xl border border-white/10">
+      <div className="w-full max-w-5xl bg-[#1D36FF] rounded-full px-8 py-3 flex items-center justify-between shadow-2xl border border-white/10">
         {/* Logo */}
         <Link href="/" className="flex items-center">
-          <span className="text-white font-bold text-xl tracking-tight">Strellara Ai</span>
+          <span className="text-white font-serif text-2xl tracking-tight">Strellara Ai</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -39,10 +39,10 @@ const Navbar: React.FC = () => {
 
         {/* Action Button */}
         <div className="hidden md:block">
-          <Button 
-            variant="wallet" 
-            size="sm" 
-            className="rounded-full border border-white/20 bg-black/20 hover:bg-black/40 text-white px-6"
+          <Button
+            variant="wallet"
+            size="sm"
+            className="rounded-full border border-white/10 bg-[#0A0B14] hover:bg-black text-white px-8 py-2.5 text-sm font-medium"
           >
             Connect Wallet
           </Button>
@@ -88,10 +88,10 @@ const Navbar: React.FC = () => {
               </Link>
             ))}
             <div className="pt-2 border-t border-white/10">
-              <Button 
-                variant="wallet" 
-                size="md" 
-                fullWidth 
+              <Button
+                variant="wallet"
+                size="md"
+                fullWidth
                 className="rounded-full border border-white/20 bg-black/20"
                 onClick={() => setIsMobileMenuOpen(false)}
               >

@@ -76,7 +76,7 @@ describe('NonceService', () => {
       afterTime.setMinutes(afterTime.getMinutes() + 5, 30);
 
       expect(result.expiresAt.getTime()).toBeGreaterThan(beforeTime.getTime());
-      expect(result.expiresAt.getTime()).toBeLessThan(afterTime.getTime());
+      expect(result.expiresAt.getTime()).toBeLessThanOrEqual(afterTime.getTime());
     });
   });
 

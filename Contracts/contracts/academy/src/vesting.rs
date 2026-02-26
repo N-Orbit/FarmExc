@@ -155,11 +155,8 @@ impl AcademyVestingContract {
 
         // Optimized: Get and increment counter in single operation
         let counter_key = symbol_short!("cnt");
-        let grant_id: u64 = env
-            .storage()
-            .persistent()
-            .get(&counter_key)
-            .unwrap_or(0u64);
+        let grant_id: u64 = env.storage().persistent().get(&counter_key).unwrap_or(0u64);
+
         let next_id = grant_id + 1;
         env.storage()
             .persistent()
@@ -177,10 +174,19 @@ impl AcademyVestingContract {
             revoke_time: 0,
         };
 
-        // Optimized: Use individual storage entry instead of loading entire map
-        let schedule_key = symbol_short!("sched_");
-        let individual_key = (schedule_key, next_id);
-        env.storage().persistent().set(&individual_key, &schedule);
+        // Store schedule
+        let schedules_key = symbol_short!("sched");
+        let mut schedules: soroban_sdk::Map<u64, VestingSchedule> = env
+            .storage()
+            .persistent()
+            .get(&schedules_key)
+            .unwrap_or_else(|| soroban_sdk::Map::new(&env));
+
+        schedules.set(next_id, schedule);
+        env.storage().persistent().set(&schedules_key, &schedules);
+
+        // Update counter
+        env.storage().persistent().set(&counter_key, &next_id);
 
         // Emit grant event
         let grant_event = GrantEvent {
@@ -209,8 +215,10 @@ impl AcademyVestingContract {
         let mut schedule: VestingSchedule = env
             .storage()
             .persistent()
-            .get(&individual_key)
+            .get(&schedules_key)
             .ok_or(VestingError::GrantNotFound)?;
+
+        let mut schedule = schedules.get(grant_id).ok_or(VestingError::GrantNotFound)?;
 
         // Verify beneficiary matches
         if schedule.beneficiary != beneficiary {
@@ -301,8 +309,10 @@ impl AcademyVestingContract {
         let mut schedule: VestingSchedule = env
             .storage()
             .persistent()
-            .get(&individual_key)
+            .get(&schedules_key)
             .ok_or(VestingError::GrantNotFound)?;
+
+        let mut schedule = schedules.get(grant_id).ok_or(VestingError::GrantNotFound)?;
 
         // Cannot revoke already claimed
         if schedule.claimed {
@@ -351,8 +361,10 @@ impl AcademyVestingContract {
         let individual_key = (schedule_key, grant_id);
         env.storage()
             .persistent()
-            .get(&individual_key)
-            .ok_or(VestingError::GrantNotFound)
+            .get(&schedules_key)
+            .ok_or(VestingError::GrantNotFound)?;
+
+        schedules.get(grant_id).ok_or(VestingError::GrantNotFound)
     }
 
     /// Calculate vested amount at current time
@@ -363,8 +375,10 @@ impl AcademyVestingContract {
         let schedule: VestingSchedule = env
             .storage()
             .persistent()
-            .get(&individual_key)
+            .get(&schedules_key)
             .ok_or(VestingError::GrantNotFound)?;
+
+        let schedule = schedules.get(grant_id).ok_or(VestingError::GrantNotFound)?;
 
         let current_time = env.ledger().timestamp();
         Self::calculate_vested_amount(&schedule, current_time)

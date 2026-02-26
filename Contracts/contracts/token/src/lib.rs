@@ -1,9 +1,10 @@
 #![no_std]
 
-use soroban_sdk::{
-    contract, contractimpl, Address, BytesN, Env, Error, IntoVal, String, Symbol, Val, Vec, TryFromVal,
-};
 use shared::state_verification::{compute_commitment, make_proof, StateProof};
+use soroban_sdk::{
+    contract, contractimpl, Address, BytesN, Env, Error, IntoVal, String, Symbol, TryFromVal, Val,
+    Vec,
+};
 
 mod admin;
 mod storage;
@@ -191,7 +192,13 @@ impl TokenContract {
             if actual != tuple.1 {
                 panic!("MISMATCH");
             }
-            return compute_commitment(&env, &env.current_contract_address(), &key, &subject, env.ledger().sequence());
+            return compute_commitment(
+                &env,
+                &env.current_contract_address(),
+                &key,
+                &subject,
+                env.ledger().sequence(),
+            );
         }
         panic!("UNSUPPORTED");
     }
@@ -199,7 +206,12 @@ impl TokenContract {
     pub fn get_balance_proof(env: Env, id: Address) -> StateProof {
         let bal = storage::balance_of(&env, &id);
         let subject = (id, bal).into_val(&env);
-        make_proof(&env, &env.current_contract_address(), &Symbol::new(&env, "balance"), &subject)
+        make_proof(
+            &env,
+            &env.current_contract_address(),
+            &Symbol::new(&env, "balance"),
+            &subject,
+        )
     }
 }
 

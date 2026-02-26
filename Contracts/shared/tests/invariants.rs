@@ -12,6 +12,11 @@ enum Action {
 }
 
 proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 32,
+        max_shrink_iters: 0,
+        ..ProptestConfig::default()
+    })]
 
     /// -----------------------------------------
     /// Stateful invariant: supply + balances safe

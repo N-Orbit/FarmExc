@@ -1,16 +1,14 @@
 #![no_std]
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, symbol_short, IntoVal};
-use shared::state_verification::{verify_with_contract, trust_add, is_trusted};
-use shared::fees::{FeeManager, FeeError};
-use shared::governance::{
-    GovernanceManager, GovernanceRole, UpgradeProposal,
-};
+#![allow(clippy::too_many_arguments)]
 use shared::events::{
     ContractPausedEvent, ContractUnpausedEvent, EventEmitter, FeeCollectedEvent, TradeExecutedEvent,
 };
 use shared::fees::{FeeError, FeeManager};
 use shared::governance::{GovernanceManager, GovernanceRole, UpgradeProposal};
-use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol};
+use shared::state_verification::{is_trusted, trust_add, verify_with_contract};
+use soroban_sdk::{
+    contract, contractimpl, contracttype, symbol_short, Address, Env, IntoVal, Symbol,
+};
 
 /// Version of this contract implementation
 const CONTRACT_VERSION: u32 = 1;
@@ -125,7 +123,12 @@ impl UpgradeableTradingContract {
         trust_add(&env, &contract);
     }
 
-    pub fn verify_external_balance(env: Env, token: Address, holder: Address, expected: i128) -> bool {
+    pub fn verify_external_balance(
+        env: Env,
+        token: Address,
+        holder: Address,
+        expected: i128,
+    ) -> bool {
         if !is_trusted(&env, &token) {
             return false;
         }
@@ -386,6 +389,50 @@ impl UpgradeableTradingContract {
         admin.require_auth();
 
         GovernanceManager::cancel_proposal(&env, proposal_id, admin)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Halt an upgrade proposal (admin only)
+    pub fn halt_upgrade(
+        env: Env,
+        proposal_id: u64,
+        admin: Address,
+        reason: Symbol,
+    ) -> Result<(), TradeError> {
+        admin.require_auth();
+
+        GovernanceManager::halt_proposal(&env, proposal_id, admin, reason)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Resume a halted upgrade proposal (admin only)
+    pub fn resume_upgrade(
+        env: Env,
+        proposal_id: u64,
+        admin: Address,
+        new_timelock_delay: u64,
+    ) -> Result<(), TradeError> {
+        admin.require_auth();
+
+        GovernanceManager::resume_proposal(&env, proposal_id, admin, new_timelock_delay)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Revoke an approval
+    pub fn revoke_approval_upgrade(
+        env: Env,
+        proposal_id: u64,
+        approver: Address,
+    ) -> Result<(), TradeError> {
+        approver.require_auth();
+
+        GovernanceManager::revoke_approval(&env, proposal_id, approver)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Get time remaining until execution is possible
+    pub fn get_time_to_execution(env: Env, proposal_id: u64) -> Result<u64, TradeError> {
+        GovernanceManager::get_time_to_execution(&env, proposal_id)
             .map_err(|_| TradeError::Unauthorized)
     }
 }

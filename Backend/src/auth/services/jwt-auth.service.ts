@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { RefreshToken } from '../entities/refresh-token.entity';
 import { User } from '../entities/user.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 import { AuditService } from '../../audit/audit.service';
 import { AuditEvent } from '../../audit/audit.event';
 
@@ -45,7 +45,7 @@ export class JwtAuthService {
   async generateRefreshToken(
     userId: string,
   ): Promise<{ token: string; id: string; expiresAt: Date }> {
-    const token = uuidv4();
+    const token = randomUUID();
     const expirationDays = 7;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expirationDays);

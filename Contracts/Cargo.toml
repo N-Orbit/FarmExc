@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    "contracts/token",
     "contracts/trading",
     "contracts/social_rewards",
     "contracts/academy",
@@ -9,11 +8,13 @@ members = [
 ]
 resolver = "2"
 
-[workspace.dependencies]
-soroban-sdk = "25.1.1"
-
 [profile.release]
 opt-level = "z"
 lto = true
 codegen-units = 1
 strip = true
+
+# Override to prevent arbitrary feature from causing issues
+# [patch.crates-io]
+# # Use a compatible version that doesn't have the arbitrary issue
+# stellar-xdr = { version = "=20.0.3" }

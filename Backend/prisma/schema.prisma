@@ -359,9 +359,30 @@ enum EmailStatus {
 }
 
 enum Role {
+  SUPER_ADMIN
+  TENANT_ADMIN
   USER
-  ADMIN
-  MENTOR
+  VIEWER
+}
+
+enum Permission {
+  // Project Permissions
+  CREATE_PROJECT
+  UPDATE_PROJECT
+  DELETE_PROJECT
+  VIEW_PROJECT
+  
+  // Contribution Permissions
+  MAKE_CONTRIBUTION
+  VIEW_CONTRIBUTION
+  
+  // User/Admin Permissions
+  MANAGE_USERS
+  MANAGE_ROLES
+  VIEW_SENSITIVE_DATA
+  
+  // System Permissions
+  MANAGE_SYSTEM
 }
 
 model TokenBlacklist {

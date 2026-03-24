@@ -12,7 +12,8 @@ import { Module } from '@nestjs/common';
 import { NotificationModule } from './notification/notification.module';
 import { ReputationModule } from './reputation/reputation.module';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis';
+import { TenantModule } from './tenant/tenant.module';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { UserController } from './user.controller';
 import { validateEnv } from './config/env.validation';
 
@@ -46,6 +47,7 @@ import { validateEnv } from './config/env.validation';
     NotificationModule,
     AuthModule,
     AuditModule,
+    TenantModule,
   ],
   controllers: [AppController, UserController],
   providers: [

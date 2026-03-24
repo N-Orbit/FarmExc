@@ -1,13 +1,13 @@
-import { describe, it } from 'node:test';
+import { ActivityType, MIN_ACTIVITY_THRESHOLD } from '../Reputation.constants';
 import {
-  calcSuccessRateScore,
-  calcPeerRatingScore,
-  calcContributionSizeScore,
   calcCommunityFeedbackScore,
+  calcContributionSizeScore,
+  calcPeerRatingScore,
+  calcSuccessRateScore,
   calculateReputationScore,
 } from './score.calculator';
+
 import { ReputationActivity } from '../reputation-activity.entity';
-import { ActivityType, MIN_ACTIVITY_THRESHOLD } from '../Reputation.constants';
 
 // ---------------------------------------------------------------------------
 // Helpers

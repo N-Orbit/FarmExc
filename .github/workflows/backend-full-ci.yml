@@ -1,11 +1,11 @@
 name: Backend Full CI
 
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - 'Backend/**'
   push:
-    branches: [main]
     paths:
       - 'Backend/**'
 

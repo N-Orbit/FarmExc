@@ -33,6 +33,9 @@ class EnvironmentVariables {
   DATABASE_NAME: string;
 
   @IsString()
+  DATABASE_URL: string;
+
+  @IsString()
   REDIS_HOST: string;
 
   @IsNumber()

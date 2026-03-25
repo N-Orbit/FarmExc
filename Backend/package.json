@@ -21,11 +21,21 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:create": "prisma migrate dev --create-only",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:migrate:status": "prisma migrate status",
+    "db:migrate:reset": "prisma migrate reset",
+    "db:migrate:diff": "prisma migrate diff --from-migrations ./prisma/migrations --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url $SHADOW_DATABASE_URL",
+    "db:rollback": "ts-node prisma/scripts/rollback.ts",
+    "db:rollback:list": "ts-node prisma/scripts/rollback.ts --list",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:pre-deploy": "ts-node prisma/scripts/pre-deploy-check.ts",
     "db:studio": "prisma studio",
     "prepare": "cd .. && husky install backend/.husky"
   },
   "dependencies": {
     "@nest-lab/throttler-storage-redis": "^1.2.0",
+    "@aws-sdk/client-secrets-manager": "^3.1016.0",
     "@nestjs/cache-manager": "^3.1.0",
     "@nestjs/common": "^10.4.22",
     "@nestjs/config": "^3.0.0",
@@ -34,6 +44,7 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^10.4.22",
+    "@nestjs/platform-socket.io": "^10.4.22",
     "@nestjs/schedule": "^4.1.2",
     "@nestjs/swagger": "^8.1.1",
     "@nestjs/throttler": "^6.5.0",
@@ -61,8 +72,8 @@
     "socket.io": "^4.8.3",
     "swagger-ui-express": "^5.0.1",
     "twilio": "^5.13.1",
-    "typeorm": "^0.3.28",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "typeorm": "^0.3.28"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
@@ -114,5 +125,8 @@
       "eslint --fix",
       "prettier --write"
     ]
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
   }
 }

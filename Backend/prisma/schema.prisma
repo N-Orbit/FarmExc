@@ -1,10 +1,13 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Prisma v7: datasource connection URL is configured in prisma.config.ts
 
 generator client {
   provider = "prisma-client-js"
 }
 
+// Provider is declared here for @db attribute support.
+// Connection URL is in prisma.config.ts (Prisma v7+)
 datasource db {
   provider = "postgresql"
 }
@@ -12,6 +15,8 @@ datasource db {
 model User {
   id              String   @id @default(cuid())
   walletAddress   String   @unique @map("wallet_address")
+  email           String?
+  name            String?
   profileData     Json?    @map("profile_data")
   reputationScore Int      @default(0) @map("reputation_score")
   trustScore      Int      @default(500) @map("trust_score")
@@ -42,7 +47,11 @@ model User {
   reputationHistory    ReputationHistory[]
   notificationSettings NotificationSetting?
   notifications        Notification[]
+  tenantMemberships    TenantMember[]
 
+  @@unique([tenantId, email])
+  @@index([tenantId, email])
+  @@index([tenantId, walletAddress])
   @@map("users")
 }
 
@@ -277,6 +286,7 @@ enum TenantStatus {
   ACTIVE
   SUSPENDED
   DELETED
+  ARCHIVED
 }
 
 enum TenantPlan {
@@ -292,13 +302,20 @@ model Tenant {
   slug      String       @unique
   status    TenantStatus @default(ACTIVE)
   plan      TenantPlan   @default(FREE)
+  metadata  Json?
   createdAt DateTime     @default(now()) @map("created_at")
   updatedAt DateTime     @updatedAt @map("updated_at")
 
-  settings  TenantSettings?
-  users     User[]
-  auditLogs TenantAuditLog[]
+  settings    TenantSettings?
+  users       User[]
+  auditLogs   TenantAuditLog[]
+  calls       Call[]
+  stakeLedger StakeLedger[]
+  claims      Claim[]
+  pools       Pool[]
+  memberships TenantMember[]
 
+  @@index([status])
   @@map("tenants")
 }
 
@@ -421,4 +438,190 @@ enum AuditEventType {
   REQUEST
   CRUD
   SYSTEM
+}
+
+model Call {
+  id          String      @id @default(uuid())
+  tenantId    String
+  description String
+  outcome     CallOutcome @default(PENDING)
+  resolvedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  stakes StakeLedger[]
+
+  @@index([tenantId, id])
+  @@index([tenantId, outcome])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, expiresAt])
+  @@map("calls")
+}
+
+model StakeLedger {
+  id               String           @id @default(uuid())
+  tenantId         String
+  callId           String
+  userAddress      String
+  amount           Decimal          @db.Decimal(18, 4)
+  position         Position
+  profitLoss       Decimal?         @db.Decimal(18, 4)
+  transactionHash  String?
+  resolutionStatus ResolutionStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  call   Call   @relation(fields: [callId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, transactionHash])
+  @@index([tenantId, id])
+  @@index([tenantId, callId])
+  @@index([tenantId, userAddress])
+  @@index([tenantId, createdAt])
+  @@map("stake_ledger")
+}
+
+model Claim {
+  id          String      @id @default(uuid())
+  tenantId    String
+  poolId      String?
+  userAddress String
+  amount      Decimal     @db.Decimal(18, 4)
+  status      ClaimStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  pool   Pool?  @relation(fields: [poolId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, id])
+  @@index([tenantId, poolId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([tenantId, userAddress])
+  @@map("claims")
+}
+
+model Pool {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  name               String
+  totalCapacity      Decimal  @default(0) @db.Decimal(18, 4)
+  lockedAmount       Decimal  @default(0) @db.Decimal(18, 4)
+  availableLiquidity Decimal  @default(0) @db.Decimal(18, 4)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  claims Claim[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId, id])
+  @@index([tenantId, name])
+  @@index([tenantId, createdAt])
+  @@map("pools")
+}
+
+model TenantMember {
+  id        String     @id @default(uuid())
+  tenantId  String
+  userId    String
+  role      TenantRole @default(MEMBER)
+  createdAt DateTime   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId, role])
+  @@map("tenant_members")
+}
+
+enum CallOutcome {
+  YES
+  NO
+  PENDING
+}
+
+enum Position {
+  YES
+  NO
+}
+
+enum ResolutionStatus {
+  PENDING
+  RESOLVED
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+// ─── Centralized Config Management ───────────────────────────────────────────
+
+model ConfigEntry {
+  id        String      @id @default(uuid())
+  key       String
+  value     String
+  scope     ConfigScope @default(GLOBAL)
+  tenantId  String?     @map("tenant_id")
+  userId    String?     @map("user_id")
+  encrypted Boolean     @default(false)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@unique([key, scope, tenantId, userId])
+  @@index([scope, tenantId])
+  @@index([key])
+  @@map("config_entries")
+}
+
+model FeatureFlag {
+  id         String   @id @default(uuid())
+  key        String
+  enabled    Boolean  @default(false)
+  tenantId   String?  @map("tenant_id")
+  rolloutPct Int      @default(100) @map("rollout_pct")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([key, tenantId])
+  @@index([key])
+  @@index([tenantId])
+  @@map("feature_flags")
+}
+
+model ConfigAuditLog {
+  id        String      @id @default(uuid())
+  key       String
+  oldValue  String?     @map("old_value")
+  newValue  String?     @map("new_value")
+  scope     ConfigScope
+  tenantId  String?     @map("tenant_id")
+  actorId   String?     @map("actor_id")
+  action    String // SET, DELETE, ROTATE_SECRET
+  createdAt DateTime    @default(now()) @map("created_at")
+
+  @@index([key])
+  @@index([tenantId])
+  @@index([createdAt])
+  @@map("config_audit_logs")
+}
+
+enum ConfigScope {
+  GLOBAL
+  TENANT
+  USER
 }

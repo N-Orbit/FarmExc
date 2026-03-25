@@ -4,6 +4,7 @@ import { defineConfig } from '@prisma/config';
 const fallbackDatabaseUrl = 'postgresql://postgres:postgres@localhost:5432/stellara_backend';
 
 export default defineConfig({
+  earlyAccess: true,
   schema: 'prisma/schema.prisma',
   migrations: {
     path: 'prisma/migrations',

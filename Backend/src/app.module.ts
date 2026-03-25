@@ -15,6 +15,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TenantModule } from './tenant/tenant.module';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { UserController } from './user.controller';
+import { WebsocketModule } from './websocket/websocket.module';
 import { validateEnv } from './config/env.validation';
 
 @Module({
@@ -48,6 +49,7 @@ import { validateEnv } from './config/env.validation';
     AuthModule,
     AuditModule,
     TenantModule,
+    WebsocketModule,
   ],
   controllers: [AppController, UserController],
   providers: [
@@ -58,4 +60,4 @@ import { validateEnv } from './config/env.validation';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

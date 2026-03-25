@@ -30,6 +30,7 @@ next-env.d.ts
 /target/
 **/*.rs.bk
 *.pdb
+**/test_snapshots/
 
 # Soroban
 *.wasm

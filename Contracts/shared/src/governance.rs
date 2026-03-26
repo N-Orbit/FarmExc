@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec};
+use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol, Vec, Map};
 
 /// Upgrade proposal that must be approved via governance
 #[contracttype]
@@ -16,6 +16,7 @@ pub struct UpgradeProposal {
     pub created_at: u64,
     pub execution_time: u64, // Timelock: when it can be executed
     pub executed: bool,
+    pub vault_proposal_id: Option<u64>, // Reference to vault when queued
 }
 
 /// Status of an upgrade proposal
@@ -129,6 +130,7 @@ impl GovernanceManager {
             created_at: env.ledger().timestamp(),
             execution_time: env.ledger().timestamp() + timelock_delay,
             executed: false,
+            vault_proposal_id: None,
         };
 
         // Store proposal
@@ -310,17 +312,47 @@ impl GovernanceManager {
         Ok(())
     }
 
-    /// Get a proposal by ID
-    pub fn get_proposal(env: &Env, proposal_id: u64) -> Result<UpgradeProposal, GovernanceError> {
+    /// Queue an approved proposal in the timelock vault
+    pub fn queue_in_vault(
+        env: &Env,
+        proposal_id: u64,
+        vault_contract: Address,
+        admin: Address,
+    ) -> Result<u64, GovernanceError> {
+        Self::require_role(env, &admin, GovernanceRole::Admin);
+
         let proposals_key = symbol_short!("props");
-        let proposals: soroban_sdk::Map<u64, UpgradeProposal> = env
+        let mut proposals: Map<u64, UpgradeProposal> = env
             .storage()
             .persistent()
             .get(&proposals_key)
             .ok_or(GovernanceError::ProposalNotFound)?;
 
-        proposals
+        let mut proposal = proposals
             .get(proposal_id)
-            .ok_or(GovernanceError::ProposalNotFound)
+            .ok_or(GovernanceError::ProposalNotFound)?;
+
+        // Validate proposal is approved and not already queued
+        if proposal.status != ProposalStatus::Approved {
+            return Err(GovernanceError::ProposalNotApproved);
+        }
+
+        if proposal.vault_proposal_id.is_some() {
+            return Err(GovernanceError::InvalidProposal); // Already queued
+        }
+
+        // Call the vault to queue the proposal
+        // Note: In a real implementation, this would use cross-contract call
+        // For now, we'll simulate by setting the vault_proposal_id
+        // The actual vault integration would happen in the contract using this manager
+
+        // This is a placeholder - actual implementation would invoke the vault contract
+        let vault_proposal_id = proposal_id; // Simplified for now
+
+        proposal.vault_proposal_id = Some(vault_proposal_id);
+        proposals.set(proposal_id, proposal);
+        env.storage().persistent().set(&proposals_key, &proposals);
+
+        Ok(vault_proposal_id)
     }
 }

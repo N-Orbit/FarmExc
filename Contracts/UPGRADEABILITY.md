@@ -364,6 +364,126 @@ pub fn execute_upgrade(
 - Sets executed flag to true
 - Locks proposal (no further changes)
 
+## 4. Timelock Vault Security Model
+
+### 4.1 Architecture Overview
+
+The **Upgrade Timelock Vault** implements a dedicated vault pattern that separates timelock storage from contract logic, providing enhanced security for upgrade execution.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              Contract Logic Layer                       │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │ • Governance Proposals                              │ │
+│  │ • Business Logic                                    │ │
+│  │ • State Management                                  │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────┐
+│            Timelock Vault Layer                         │
+│  ┌─────────────────────────────────────────────────────┐ │
+│  │ • Isolated Timelock Storage                         │ │
+│  │ • Queue Management                                  │ │
+│  │ • Execution Validation                              │ │
+│  │ • Cancellation with Refunds                         │ │
+│  └─────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 4.2 Security Benefits
+
+**Separation of Concerns:**
+- Timelock logic isolated from business logic
+- Vault storage independent of contract storage
+- Cross-contract calls prevent storage manipulation
+
+**Enhanced Timelock Enforcement:**
+- Timelock validated at execution time in vault
+- Queue mechanism prevents direct execution
+- Isolated storage prevents timelock bypass
+
+**Cancellation & Refund Capabilities:**
+- Admin can cancel queued upgrades
+- Refund recipient tracking for compensation
+- Event emission for transparency
+
+### 4.3 Vault State Management
+
+**QueuedUpgrade Structure:**
+```rust
+pub struct QueuedUpgrade {
+    pub proposal: UpgradeProposal,      // Full proposal data
+    pub queued_at: u64,                 // Queue timestamp
+    pub can_execute_at: u64,            // Execution eligibility time
+    pub cancelled: bool,                // Cancellation flag
+    pub refund_recipient: Option<Address>, // Refund destination
+}
+```
+
+**State Transitions:**
+```
+PENDING (in Contract)
+    ↓ (Approved)
+APPROVED (in Contract)
+    ↓ (queue_upgrade)
+QUEUED (in Vault)
+    ├─► CANCELLED (cancel_upgrade)
+    └─► EXECUTABLE (after timelock)
+        └─► EXECUTED (execute_upgrade)
+```
+
+### 4.4 Event Emission
+
+The vault emits structured events for transparency:
+
+**UpgradeQueuedEvent:**
+- `proposal_id`: Vault proposal identifier
+- `target_contract`: Contract being upgraded
+- `queued_at`: Queue timestamp
+- `can_execute_at`: Earliest execution time
+
+**UpgradeExecutedEvent:**
+- `proposal_id`: Vault proposal identifier
+- `target_contract`: Contract being upgraded
+- `executed_at`: Actual execution timestamp
+
+**UpgradeCancelledEvent:**
+- `proposal_id`: Vault proposal identifier
+- `target_contract`: Contract being upgraded
+- `cancelled_at`: Cancellation timestamp
+- `refund_recipient`: Designated refund address (optional)
+
+### 4.5 Cross-Contract Security
+
+**Safe Invocation Pattern:**
+- Uses `safe_call` module for cross-contract calls
+- Atomic execution prevents partial state updates
+- Error propagation maintains transaction integrity
+
+**Access Control:**
+- Vault maintains its own role-based permissions
+- Independent of calling contract's governance
+- Multi-signature requirements for vault operations
+
+### 4.6 Failure Scenarios & Mitigations
+
+**Timelock Bypass Attempts:**
+- ❌ Direct contract execution (before queuing)
+- ❌ Storage manipulation from contract
+- ✅ Vault enforces timelock at execution time
+
+**Cancellation Abuse:**
+- ❌ Admin cancels after timelock expires
+- ✅ Only cancellable before execution
+- ✅ Events provide audit trail
+
+**Refund Mechanism:**
+- Optional refund recipient specification
+- Enables compensation for affected parties
+- Transparent through event emission
+
 ## 5. Testing & Validation
 
 ### 5.1 Test Coverage

@@ -1317,6 +1317,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "timelock-vault"
+version = "0.1.0"
+dependencies = [
+ "shared",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "trading"
 version = "0.1.0"
 dependencies = [

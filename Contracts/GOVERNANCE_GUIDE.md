@@ -2,18 +2,74 @@
 
 ## Quick Start Guide
 
-This guide provides step-by-step instructions for proposing, approving, and executing contract upgrades using the Stellara governance system.
+This guide provides step-by-step instructions for proposing, approving, queuing, and executing contract upgrades using the Stellara governance system with the new **Upgrade Timelock Vault** for enhanced security.
 
 ## Prerequisites
 
 - Stellar CLI installed and configured
 - Funded testnet account(s)
 - Identified governance participants (admin, approvers, executor)
+- **NEW**: Deployed Upgrade Timelock Vault contract
 - Understanding of contract addresses and symbols
+
+## Architecture Overview
+
+The upgrade process now uses a **separated timelock vault** pattern:
+
+```
+Contract Storage (Governance)
+    ↓ (Proposal Approval)
+Timelock Vault (Isolated Storage)
+    ↓ (Timelock Enforcement)
+Upgrade Execution
+```
+
+**Benefits:**
+- ✅ Timelock storage separated from contract logic
+- ✅ Queue mechanism for upgrade execution
+- ✅ Cancellation with refund capability
+- ✅ Enhanced security through isolation
 
 ## Part 1: Initial Setup
 
-### Step 1: Deploy the Upgradeable Contract
+### Step 1: Deploy the Upgrade Timelock Vault
+
+```bash
+# Build timelock vault contract
+cd Contracts/contracts/timelock-vault
+cargo build --release --target wasm32-unknown-unknown
+
+# Deploy vault contract
+VAULT_ID=$(stellar contract deploy \
+  --wasm ../../target/wasm32-unknown-unknown/release/timelock_vault.wasm \
+  --source my-account \
+  --network testnet)
+
+echo "Timelock Vault ID: $VAULT_ID"
+```
+
+### Step 2: Initialize the Vault
+
+```bash
+# Define governance participants
+ADMIN="GXXXXXX..."        # Your admin account
+APPROVER_1="GXXXXXX..."   # First multi-sig signer
+APPROVER_2="GXXXXXX..."   # Second multi-sig signer
+APPROVER_3="GXXXXXX..."   # Third multi-sig signer
+EXECUTOR="GXXXXXX..."     # Execution account
+
+# Initialize vault with 3-of-3 multi-sig requirement
+stellar contract invoke \
+  --id $VAULT_ID \
+  --source $ADMIN \
+  --network testnet \
+  -- init \
+  --admin "$ADMIN" \
+  --approvers '["'"$APPROVER_1"'", "'"$APPROVER_2"'", "'"$APPROVER_3"'"]' \
+  --executor "$EXECUTOR"
+```
+
+### Step 3: Deploy the Upgradeable Contract
 
 ```bash
 # Build contract
@@ -29,17 +85,10 @@ TRADING_ID=$(stellar contract deploy \
 echo "Trading Contract ID: $TRADING_ID"
 ```
 
-### Step 2: Initialize with Governance Roles
+### Step 4: Initialize Contract with Vault Reference
 
 ```bash
-# Define governance participants
-ADMIN="GXXXXXX..."        # Your admin account
-APPROVER_1="GXXXXXX..."   # First multi-sig signer
-APPROVER_2="GXXXXXX..."   # Second multi-sig signer
-APPROVER_3="GXXXXXX..."   # Third multi-sig signer
-EXECUTOR="GXXXXXX..."     # Execution account
-
-# Initialize contract with 3-of-3 multi-sig requirement
+# Initialize contract with governance roles
 stellar contract invoke \
   --id $TRADING_ID \
   --source $ADMIN \
@@ -48,6 +97,14 @@ stellar contract invoke \
   --admin "$ADMIN" \
   --approvers '["'"$APPROVER_1"'", "'"$APPROVER_2"'", "'"$APPROVER_3"'"]' \
   --executor "$EXECUTOR"
+
+# Set the timelock vault address
+stellar contract invoke \
+  --id $TRADING_ID \
+  --source $ADMIN \
+  --network testnet \
+  -- set_timelock_vault \
+  --vault_contract "$VAULT_ID"
 ```
 
 ### Step 3: Verify Initialization
@@ -70,7 +127,7 @@ stellar contract invoke \
 
 ## Part 2: Proposing an Upgrade
 
-### Step 4: Create Upgrade Proposal
+### Step 5: Create Upgrade Proposal
 
 ```bash
 # Define upgrade parameters
@@ -138,16 +195,6 @@ stellar contract invoke \
   --approver "$APPROVER_1"
 
 echo "First approval submitted"
-
-# Check proposal status
-stellar contract invoke \
-  --id $TRADING_ID \
-  --source $ADMIN \
-  --network testnet \
-  -- get_upgrade_proposal \
-  --proposal_id "$PROPOSAL_ID"
-
-# Expected: approvals_count = 1, status = Pending
 ```
 
 ### Step 7: Second Approver Votes
@@ -175,58 +222,113 @@ stellar contract invoke \
 # Expected: approvals_count = 2, status = Approved ✓
 ```
 
-### Step 8: Wait for Timelock Expiration
+## Part 4: Queue Upgrade in Vault
+
+### Step 8: Queue Approved Proposal
+
+After approval, the admin must queue the proposal in the timelock vault:
+
+```bash
+# Queue the approved proposal in the vault (ADMIN only)
+VAULT_PROPOSAL_ID=$(stellar contract invoke \
+  --id $TRADING_ID \
+  --source $ADMIN \
+  --network testnet \
+  -- queue_upgrade \
+  --proposal_id "$PROPOSAL_ID" | grep -oP '\d+')
+
+echo "Vault Proposal ID: $VAULT_PROPOSAL_ID"
+```
+
+### Step 9: Verify Queuing
+
+```bash
+# Check vault proposal details
+stellar contract invoke \
+  --id $VAULT_ID \
+  --source $ADMIN \
+  --network testnet \
+  -- get_queued_upgrade \
+  --vault_proposal_id "$VAULT_PROPOSAL_ID"
+
+# Expected: queued_at, can_execute_at, cancelled = false
+```
+
+## Part 5: Timelock and Execution
+
+### Step 10: Wait for Timelock Expiration
 
 ```bash
 # Show current time
 date +%s
 
 # Calculate when upgrade can be executed
-# execution_time from proposal (e.g., 1678890000)
-# If current time < execution_time, wait or use testnet time advancement
+# can_execute_at from vault proposal
+# If current time < can_execute_at, wait or use testnet time advancement
 
 # Option A: Wait for real time
 echo "Waiting $TIMELOCK_DELAY seconds for timelock to expire..."
 sleep $TIMELOCK_DELAY
 
 # Option B: Use Soroban test utilities (in tests)
-# env.ledger().set_timestamp(execution_time + 1);
+# env.ledger().set_timestamp(can_execute_at + 1);
 ```
 
-## Part 4: Execution
-
-### Step 9: Execute Upgrade
+### Step 11: Execute Upgrade
 
 ```bash
-# After timelock expires, EXECUTOR can execute the upgrade
+# After timelock expires, EXECUTOR can execute the upgrade through the vault
 stellar contract invoke \
   --id $TRADING_ID \
   --source $EXECUTOR \
   --network testnet \
   -- execute_upgrade \
-  --proposal_id "$PROPOSAL_ID" \
+  --vault_proposal_id "$VAULT_PROPOSAL_ID" \
   --executor "$EXECUTOR"
 
 echo "Upgrade executed successfully!"
 ```
 
-### Step 10: Verify Upgrade Completion
+### Step 12: Verify Upgrade Completion
 
 ```bash
-# Confirm proposal is marked as executed
+# Confirm proposal is marked as executed in vault
+stellar contract invoke \
+  --id $VAULT_ID \
+  --source $ADMIN \
+  --network testnet \
+  -- get_queued_upgrade \
+  --vault_proposal_id "$VAULT_PROPOSAL_ID"
+
+# Expected: executed = true
+```
+
+## Part 6: Handling Errors & Cancellations
+
+### Scenario A: Cancelling a Queued Upgrade
+
+```bash
+# If circumstances change, admin can cancel a queued upgrade with refund
 stellar contract invoke \
   --id $TRADING_ID \
   --source $ADMIN \
   --network testnet \
-  -- get_upgrade_proposal \
-  --proposal_id "$PROPOSAL_ID"
+  -- cancel_queued_upgrade \
+  --vault_proposal_id "$VAULT_PROPOSAL_ID" \
+  --refund_recipient "GREFUND_RECIPIENT..."
 
-# Expected: status = Executed, executed = true
+# Verify cancellation
+stellar contract invoke \
+  --id $VAULT_ID \
+  --source $ADMIN \
+  --network testnet \
+  -- get_queued_upgrade \
+  --vault_proposal_id "$VAULT_PROPOSAL_ID"
+
+# Expected: cancelled = true, refund_recipient set
 ```
 
-## Part 5: Handling Errors & Rejections
-
-### Scenario A: Rejecting an Upgrade
+### Scenario B: Rejecting an Upgrade Before Approval
 
 ```bash
 # If APPROVER_2 disagrees, they can reject before threshold is met

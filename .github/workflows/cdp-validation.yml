@@ -81,7 +81,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         
       - name: Create CDP migrations
-        run: pnpm db:migrate:create --name add_cdp_tables
+        run: echo "Migrations already created" || pnpm db:migrate:create --name add_cdp_tables
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
         

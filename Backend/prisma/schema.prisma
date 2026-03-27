@@ -1415,3 +1415,153 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+// Regulatory Reporting Models
+enum RegulatoryReportType {
+  TRADE_REPORT
+  SUSPICIOUS_ACTIVITY_REPORT
+  QUARTERLY_COMPLIANCE
+  ANNUAL_COMPLIANCE
+  LARGE_TRADE_REPORT
+  EXAMINER_REPORT
+}
+
+enum RegulatoryReportStatus {
+  PENDING
+  PROCESSING
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum RegulatoryBody {
+  FINRA
+  NFA
+  SEC
+  CFTC
+  IRS
+}
+
+model RegulatoryReport {
+  id              String                @id @default(cuid())
+  reportType      RegulatoryReportType  @map("report_type")
+  regulatoryBody  RegulatoryBody        @map("regulatory_body")
+  status          RegulatoryReportStatus @default(PENDING)
+  reportPeriod    String                @map("report_period") // YYYY-MM, YYYY-Q1, etc.
+  submissionId    String?               @map("submission_id")
+  submissionDate  DateTime?             @map("submission_date")
+  acceptanceDate  DateTime?             @map("acceptance_date")
+  rejectionReason String?               @map("rejection_reason")
+  reportData      Json                  @map("report_data")
+  metadata        Json?                 // Processing metadata, checksums, etc.
+  filePath        String?               @map("file_path") // Encrypted file storage path
+  fileChecksum    String?               @map("file_checksum")
+  encryptionKeyId String?               @map("encryption_key_id")
+  tenantId        String?               @map("tenant_id")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+
+  // Relations
+  transactions    RegulatoryTransaction[] @relation("RegulatoryTransactions")
+  auditTrail      RegulatoryAuditTrail[] @relation("RegulatoryAuditTrail")
+
+  @@index([reportType])
+  @@index([regulatoryBody])
+  @@index([status])
+  @@index([reportPeriod])
+  @@index([submissionDate])
+  @@index([tenantId])
+  @@map("regulatory_reports")
+}
+
+model RegulatoryTransaction {
+  id              String            @id @default(cuid())
+  reportId        String            @map("report_id")
+  report          RegulatoryReport  @relation("RegulatoryTransactions", fields: [reportId], references: [id], onDelete: Cascade)
+  transactionHash String            @unique @map("transaction_hash")
+  transactionType String            @map("transaction_type") // TRADE, DEPOSIT, WITHDRAWAL
+  fromAddress     String            @map("from_address")
+  toAddress       String            @map("to_address")
+  amount          BigInt
+  asset           String            // Asset symbol (BTC, ETH, USD, etc.)
+  usdValue        BigInt?           @map("usd_value") // USD equivalent at time of transaction
+  timestamp       DateTime
+  blockNumber     BigInt?           @map("block_number")
+  blockHash       String?           @map("block_hash")
+  metadata        Json?             // Additional transaction data
+  riskScore       Float?            @map("risk_score") // ML/AI risk assessment
+  isSuspicious    Boolean           @default(false) @map("is_suspicious")
+  suspicionReason String?           @map("suspicion_reason")
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  @@index([reportId])
+  @@index([transactionHash])
+  @@index([fromAddress])
+  @@index([toAddress])
+  @@index([timestamp])
+  @@index([isSuspicious])
+  @@map("regulatory_transactions")
+}
+
+model RegulatoryAuditTrail {
+  id          String   @id @default(cuid())
+  reportId    String   @map("report_id")
+  report      RegulatoryReport @relation("RegulatoryAuditTrail", fields: [reportId], references: [id], onDelete: Cascade)
+  action      String   // CREATED, SUBMITTED, ACCEPTED, REJECTED, VIEWED, DOWNLOADED
+  userId      String?  @map("user_id") // Who performed the action
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  details     Json?    // Action-specific details
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([reportId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("regulatory_audit_trails")
+}
+
+model ComplianceConfiguration {
+  id                    String           @id @default(cuid())
+  regulatoryBody        RegulatoryBody   @map("regulatory_body")
+  reportType            RegulatoryReportType @map("report_type")
+  isActive              Boolean          @default(true) @map("is_active")
+  reportingFrequency    String           @map("reporting_frequency") // DAILY, WEEKLY, MONTHLY, QUARTERLY, ANNUALLY
+  submissionFormat      String           @map("submission_format") // XML, JSON, CSV, FINRA_XML
+  thresholdRules        Json?            @map("threshold_rules") // Large trade thresholds, etc.
+  suspiciousPatterns    Json?            @map("suspicious_patterns") // ML patterns for SAR detection
+  retentionPeriodYears  Int              @default(7) @map("retention_period_years")
+  encryptionRequired    Boolean          @default(true) @map("encryption_required")
+  notificationEmails    String[]         @map("notification_emails")
+  lastReportPeriod      String?          @map("last_report_period")
+  tenantId              String?          @map("tenant_id")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  @@unique([regulatoryBody, reportType, tenantId])
+  @@index([regulatoryBody])
+  @@index([reportType])
+  @@index([isActive])
+  @@map("compliance_configurations")
+}
+
+model ExaminerAccess {
+  id            String   @id @default(cuid())
+  examinerId    String   @unique @map("examiner_id") // External examiner identifier
+  regulatoryBody RegulatoryBody @map("regulatory_body")
+  isActive      Boolean  @default(true) @map("is_active")
+  accessLevel   String   // READ_ONLY, FULL_ACCESS
+  permissions   String[] // Specific permissions
+  validFrom     DateTime @map("valid_from")
+  validUntil    DateTime? @map("valid_until")
+  lastLoginAt   DateTime? @map("last_login_at")
+  ipAddress     String?  @map("ip_address")
+  tenantId      String?  @map("tenant_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([examinerId])
+  @@index([regulatoryBody])
+  @@index([isActive])
+  @@map("examiner_access")
+}

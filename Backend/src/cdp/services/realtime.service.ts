@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
-import { WebsocketService } from '../../websocket/websocket.service';
 import { ProcessedEvent } from './event-ingestion.service';
 
 export interface SegmentUpdate {

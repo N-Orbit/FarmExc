@@ -1,4 +1,4 @@
-import { IsString, IsObject, IsOptional, IsEnum, IsArray, IsBoolean, IsNumber } from 'class-validator';
+import { IsString, IsObject, IsOptional, IsEnum, IsArray, IsBoolean, IsNumber, IsDateString } from 'class-validator';
 
 export enum EventType {
   PAGE_VIEW = 'page_view',
@@ -32,6 +32,7 @@ export enum SegmentType {
 
 export class EventIngestionDto {
   @IsString()
+  @IsOptional()
   anonymousId?: string;
 
   @IsString()
@@ -70,9 +71,9 @@ export class EventIngestionDto {
   @IsOptional()
   tenantId?: string;
 
-  @IsNumber()
+  @IsDateString()
   @IsOptional()
-  timestamp?: number;
+  timestamp?: string;
 }
 
 export class SegmentCreateDto {

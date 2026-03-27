@@ -38,11 +38,15 @@ export class CdpService implements ICdpService {
       eventDto.tenantId,
     );
 
+    // Convert timestamp to Date object
+    const timestamp = eventDto.timestamp ? new Date(eventDto.timestamp) : new Date();
+
     // Store the event with resolved identity
     const processedEvent = await this.eventIngestionService.processEvent({
       ...eventDto,
       userId: resolvedIdentity.userId,
       anonymousId: resolvedIdentity.anonymousId,
+      timestamp,
     });
 
     // Update user profile in real-time

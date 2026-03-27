@@ -3,6 +3,7 @@ import { ExperimentsModule } from './experiments/experiments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { KycModule } from './kyc/kyc.module';
 import { CdpModule } from './cdp/cdp.module';
+import { RegulatoryReportingModule } from './regulatory-reporting/regulatory-reporting.module';
 
 import { AdminModule } from './admin/admin.module';
 import { AppController } from './app.controller';
@@ -94,6 +95,7 @@ import { MultisigModule } from './multisig/multisig.module';
     ExperimentsModule,
     KycModule,
     CdpModule,
+    RegulatoryReportingModule,
   ],
   controllers: [AppController, UserController, DocsController],
   providers: [AppService],

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../../redis/redis.service';
 import { SegmentCreateDto, SegmentType } from '../dto/cdp.dto';
 
@@ -477,6 +477,18 @@ export class SegmentBuilderService {
   }
 
   async updateSegmentMemberships(userId: string) {
+    // Get all active segments
+    const segments = await this.prisma.cdpSegment.findMany({
+      where: { isActive: true },
+    });
+
+    // Evaluate each segment for this user
+    for (const segment of segments) {
+      await this.evaluateSegment(segment.id);
+    }
+  }
+
+  async refreshSegmentMemberships(userId: string) {
     // Get all active segments
     const segments = await this.prisma.cdpSegment.findMany({
       where: { isActive: true },

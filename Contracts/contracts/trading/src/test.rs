@@ -540,3 +540,194 @@ fn test_optimized_storage_scaling() {
     assert!(trade_10.is_some());
     assert_eq!(trade_10.unwrap().id, 10);
 }
+
+// ============ TIMELOCK VAULT TESTS (issue #301) ============
+
+use shared::timelock_vault::VaultStatus;
+
+#[test]
+fn test_vault_queue_upgrade() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, _executor) = setup_contract(&env);
+
+    let entry_id = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &3600u64,
+    );
+
+    assert_eq!(entry_id, 1);
+
+    let entry = client.vault_get_entry(&entry_id);
+    assert_eq!(entry.id, 1);
+    assert_eq!(entry.status, VaultStatus::Queued);
+    assert_eq!(entry.queued_at, 1000);
+    assert_eq!(entry.execution_time, 1000 + 3600);
+}
+
+#[test]
+fn test_vault_timelock_enforced_before_expiry() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, executor) = setup_contract(&env);
+
+    let entry_id = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &7200u64, // 2 hours
+    );
+
+    // Attempt execution before timelock expires — must fail
+    let result = client.try_vault_execute_upgrade(&executor, &entry_id);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_vault_execute_after_timelock() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, executor) = setup_contract(&env);
+
+    let entry_id = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &3600u64,
+    );
+
+    // Advance past timelock
+    env.ledger().with_mut(|li| li.timestamp = 1000 + 3601);
+
+    let entry = client.vault_execute_upgrade(&executor, &entry_id);
+    assert_eq!(entry.status, VaultStatus::Executed);
+}
+
+#[test]
+fn test_vault_cancel_by_admin() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, _executor) = setup_contract(&env);
+
+    let entry_id = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &3600u64,
+    );
+
+    client.vault_cancel_upgrade(&admin, &entry_id);
+
+    let entry = client.vault_get_entry(&entry_id);
+    assert_eq!(entry.status, VaultStatus::Cancelled);
+}
+
+#[test]
+fn test_vault_cannot_execute_cancelled_entry() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, executor) = setup_contract(&env);
+
+    let entry_id = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &3600u64,
+    );
+
+    client.vault_cancel_upgrade(&admin, &entry_id);
+
+    // Advance past timelock
+    env.ledger().with_mut(|li| li.timestamp = 1000 + 3601);
+
+    // Execution of a cancelled entry must fail
+    let result = client.try_vault_execute_upgrade(&executor, &entry_id);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_vault_cannot_execute_twice() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, executor) = setup_contract(&env);
+
+    let entry_id = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &3600u64,
+    );
+
+    env.ledger().with_mut(|li| li.timestamp = 1000 + 3601);
+    client.vault_execute_upgrade(&executor, &entry_id);
+
+    // Second execution must fail
+    let result = client.try_vault_execute_upgrade(&executor, &entry_id);
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_vault_rejects_delay_below_minimum() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, _executor) = setup_contract(&env);
+
+    // 1800 seconds < MIN_DELAY (3600) — must fail
+    let result = client.try_vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upgrade"),
+        &1800u64,
+    );
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_vault_multiple_queued_entries() {
+    let env = Env::default();
+    env.ledger().with_mut(|li| li.timestamp = 1000);
+    env.mock_all_auths();
+
+    let (client, admin, _approver, executor) = setup_contract(&env);
+
+    let id1 = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v2hash"),
+        &symbol_short!("upg1"),
+        &3600u64,
+    );
+    let id2 = client.vault_queue_upgrade(
+        &admin,
+        &symbol_short!("v3hash"),
+        &symbol_short!("upg2"),
+        &7200u64,
+    );
+
+    assert_eq!(id1, 1);
+    assert_eq!(id2, 2);
+
+    // Cancel first, execute second
+    client.vault_cancel_upgrade(&admin, &id1);
+
+    env.ledger().with_mut(|li| li.timestamp = 1000 + 7201);
+    let entry2 = client.vault_execute_upgrade(&executor, &id2);
+
+    assert_eq!(entry2.status, VaultStatus::Executed);
+    assert_eq!(client.vault_get_entry(&id1).status, VaultStatus::Cancelled);
+}

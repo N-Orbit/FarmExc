@@ -3,6 +3,7 @@
 use shared::acl::ACL;
 use shared::fees::FeeManager;
 use shared::governance::{GovernanceManager, GovernanceRole, UpgradeProposal};
+use shared::timelock_vault::{TimelockVault, VaultEntry};
 use soroban_sdk::{contract, contractimpl, contracttype, symbol_short, Address, Env, Symbol, Vec};
 
 /// Version of this contract implementation
@@ -579,6 +580,63 @@ impl UpgradeableTradingContract {
 
         GovernanceManager::cancel_proposal(&env, proposal_id, admin)
             .map_err(|_| TradeError::Unauthorized)
+    }
+
+    // -----------------------------------------------------------------------
+    // Upgrade Timelock Vault (issue #301)
+    // -----------------------------------------------------------------------
+
+    /// Queue an upgrade in the isolated timelock vault.
+    ///
+    /// Separates timelock storage from contract logic. The upgrade is held in
+    /// the vault until `timelock_delay` seconds have elapsed, after which any
+    /// executor-role address may call `vault_execute_upgrade`.
+    ///
+    /// `timelock_delay` must be >= 3600 seconds (1 hour).
+    pub fn vault_queue_upgrade(
+        env: Env,
+        admin: Address,
+        new_contract_hash: Symbol,
+        description: Symbol,
+        timelock_delay: u64,
+    ) -> Result<u64, TradeError> {
+        admin.require_auth();
+        require_initialized(&env)?;
+
+        TimelockVault::queue_upgrade(&env, admin, new_contract_hash, description, timelock_delay)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Execute a vault-queued upgrade after the timelock has expired.
+    pub fn vault_execute_upgrade(
+        env: Env,
+        executor: Address,
+        entry_id: u64,
+    ) -> Result<VaultEntry, TradeError> {
+        executor.require_auth();
+        require_initialized(&env)?;
+
+        TimelockVault::execute_upgrade(&env, executor, entry_id)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Cancel a vault-queued upgrade (admin only).
+    pub fn vault_cancel_upgrade(
+        env: Env,
+        admin: Address,
+        entry_id: u64,
+    ) -> Result<(), TradeError> {
+        admin.require_auth();
+        require_initialized(&env)?;
+
+        TimelockVault::cancel_upgrade(&env, admin, entry_id)
+            .map_err(|_| TradeError::Unauthorized)
+    }
+
+    /// Get a vault entry by ID.
+    pub fn vault_get_entry(env: Env, entry_id: u64) -> Result<VaultEntry, TradeError> {
+        require_initialized(&env)?;
+        TimelockVault::get_entry(&env, entry_id).map_err(|_| TradeError::Unauthorized)
     }
 }
 

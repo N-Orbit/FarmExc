@@ -5,7 +5,7 @@ members = [
     "contracts/messaging",
     "contracts/academy",
     "contracts/academy-rewards",
-
+    "contracts/fee-distribution",
     "integration-tests",
     "shared",
 ]

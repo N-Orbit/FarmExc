@@ -419,6 +419,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b90ca2580b73ab6a1f724b76ca11ab632df820fd6040c336200d2c1df7b3c82c"
 
 [[package]]
+name = "fee-distribution"
+version = "0.1.0"
+dependencies = [
+ "shared",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "ff"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1243,13 +1251,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stellara-staking-rewards"
-version = "0.1.0"
-dependencies = [
- "soroban-sdk",
-]
-
-[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1327,6 +1328,7 @@ dependencies = [
 name = "trading"
 version = "0.1.0"
 dependencies = [
+ "fee-distribution",
  "shared",
  "soroban-sdk",
 ]

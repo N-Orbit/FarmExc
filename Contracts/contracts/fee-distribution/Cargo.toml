@@ -1,5 +1,5 @@
 [package]
-name = "trading"
+name = "fee-distribution"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,7 +12,6 @@ testutils = ["soroban-sdk/testutils"]
 [dependencies]
 soroban-sdk = "20.5.0"
 shared = { path = "../../shared" }
-fee-distribution = { path = "../fee-distribution" }
 
 [dev-dependencies]
 soroban-sdk = { version = "20.5.0", features = ["testutils"] }

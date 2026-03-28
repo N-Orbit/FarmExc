@@ -23,6 +23,7 @@ mod storage_keys {
     pub const TRADE_COUNT: Symbol = symbol_short!("t_cnt");
     pub const RL_CFG: Symbol = symbol_short!("rl_cfg");
     pub const PREM: Symbol = symbol_short!("prem");
+    pub const FEE_DIST: Symbol = symbol_short!("f_dist");
 }
 
 /// Trading contract with upgradeability and governance
@@ -293,8 +294,19 @@ impl UpgradeableTradingContract {
 
         let current_timestamp = env.ledger().timestamp();
 
-        FeeManager::collect_fee(&env, &fee_token, &trader, &fee_recipient, fee_amount)
-            .map_err(|_| TradeError::InsufficientBalance)?;
+        let distributor: Option<Address> = storage.get(&storage_keys::FEE_DIST);
+        if let Some(dist_addr) = distributor {
+            if fee_recipient == dist_addr {
+                let dist_client = fee_distribution::FeeDistributionContractClient::new(&env, &dist_addr);
+                dist_client.distribute_fees(&fee_token, &trader, &fee_amount);
+            } else {
+                FeeManager::collect_fee(&env, &fee_token, &trader, &fee_recipient, fee_amount)
+                    .map_err(|_| TradeError::InsufficientBalance)?;
+            }
+        } else {
+            FeeManager::collect_fee(&env, &fee_token, &trader, &fee_recipient, fee_amount)
+                .map_err(|_| TradeError::InsufficientBalance)?;
+        }
 
         let trade_id: u64 = storage.get(&storage_keys::TRADE_COUNT).unwrap_or(0) + 1;
         let signed_amount = if is_buy { amount } else { -amount };
@@ -520,6 +532,19 @@ impl UpgradeableTradingContract {
         require_initialized(&env)?;
         ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
         ACL::assign_permissions_batch(&env, &role, &permissions);
+        Ok(())
+    }
+
+    /// Set the fee distributor (Admin only)
+    pub fn set_fee_distributor(
+        env: Env,
+        admin: Address,
+        distributor: Address,
+    ) -> Result<(), TradeError> {
+        admin.require_auth();
+        require_initialized(&env)?;
+        ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
+        env.storage().persistent().set(&storage_keys::FEE_DIST, &distributor);
         Ok(())
     }
 

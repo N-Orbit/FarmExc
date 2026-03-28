@@ -102,3 +102,41 @@ pub struct PoolConfig {
     pub apy_bps: u32,              // APY in basis points (100 = 1%)
 }
 ```
+
+## Fee Distribution Module
+
+### Purpose
+Automates the routing of collected fees to treasury, staking rewards, and burn mechanisms based on configurable split percentages.
+
+### State Variables
+- `splits`: FeeSplits - Mapping of split percentages in basis points (BPS)
+- `recipients`: FeeRecipients - Addresses for treasury, staking, and burn destinations
+- `stats`: FeeStats - Cumulative fee distribution statistics per token
+
+### Features
+- **Configurable Splits**: Governance can adjust the treasury, staking, and burn percentages (total must equal 10000 BPS).
+- **Multiple Token Support**: Can handle any Stellar asset or Soroban token.
+- **Real-time Distribution**: Integrated with the Trading contract for automatic fee splitting on every trade.
+- **Manual Distribution**: Supports `distribute_held_fees` to process tokens sent directly to the contract.
+
+### Key Structs
+
+```rust
+pub struct FeeSplits {
+    pub treasury_bps: u32,
+    pub staking_bps: u32,
+    pub burn_bps: u32,
+}
+
+pub struct FeeRecipients {
+    pub treasury: Address,
+    pub staking: Address,
+    pub burn: Address,
+}
+
+pub struct FeeStats {
+    pub total_treasury: i128,
+    pub total_staking: i128,
+    pub total_burn: i128,
+}
+```

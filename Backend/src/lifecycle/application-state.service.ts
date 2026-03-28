@@ -3,10 +3,21 @@ import * as os from 'node:os';
 import { PostgresService } from '../database/postgres.service';
 import { RedisService } from '../redis/redis.service';
 import { parseDurationToMilliseconds } from '../common/utils/duration.util';
+import { WebsocketLoadBalancerService } from '../websocket/load-balancer.service';
 
 interface DependencySnapshot {
   database: boolean;
   redis: boolean;
+}
+
+interface DeploymentSnapshot {
+  environment: string;
+  slot: string;
+  activeColor: string;
+  trafficStatus: string;
+  releaseVersion: string;
+  commitSha: string;
+  buildId: string;
 }
 
 @Injectable()
@@ -24,15 +35,25 @@ export class ApplicationStateService {
     database: false,
     redis: false,
   };
+  private readonly deploymentSnapshot: DeploymentSnapshot = {
+    environment: process.env.DEPLOYMENT_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development',
+    slot: process.env.DEPLOYMENT_SLOT ?? 'standalone',
+    activeColor: process.env.ACTIVE_COLOR ?? 'unknown',
+    trafficStatus: process.env.TRAFFIC_STATUS ?? 'warming',
+    releaseVersion: process.env.RELEASE_VERSION ?? 'local',
+    commitSha: process.env.RELEASE_COMMIT_SHA ?? 'local',
+    buildId: process.env.RELEASE_BUILD_ID ?? 'manual',
+  };
   private drainWaiters: Array<() => void> = [];
 
   constructor(
     private readonly postgres: PostgresService,
     private readonly redisService: RedisService,
+    private readonly wsLoadBalancer: WebsocketLoadBalancerService,
   ) {
     this.drainTimeoutMs = parseDurationToMilliseconds(
       process.env.SHUTDOWN_DRAIN_TIMEOUT_MS,
-      30_000,
+      60_000,
     );
   }
 
@@ -63,6 +84,7 @@ export class ApplicationStateService {
   markReady(): void {
     this.startupComplete = true;
     this.startupError = undefined;
+    this.deploymentSnapshot.trafficStatus = 'ready';
   }
 
   incrementActiveRequests(): void {
@@ -92,9 +114,13 @@ export class ApplicationStateService {
 
     this.draining = true;
     this.shutdownSignal = signal;
+    this.deploymentSnapshot.trafficStatus = 'draining';
     this.logger.warn(
-      `Received ${signal}. Entering drain mode with ${this.activeRequests} active requests.`,
+      `Received ${signal}. Entering drain mode with ${this.activeRequests} active requests and starting WebSocket drain.`,
     );
+
+    // Update WebSocket load balancer status to draining
+    await this.wsLoadBalancer.setDrainingStatus();
   }
 
   async waitForInflightRequests(): Promise<void> {
@@ -167,10 +193,13 @@ export class ApplicationStateService {
     };
   }
 
-  getHealthSnapshot() {
+  async getHealthSnapshot() {
+    const wsHealth = await this.wsLoadBalancer.getHealthStatus();
     return {
       ...this.getLivenessSnapshot(),
       ...this.getReadinessSnapshot(),
+      deployment: this.deploymentSnapshot,
+      websocket: wsHealth,
     };
   }
 

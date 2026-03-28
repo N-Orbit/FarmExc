@@ -137,3 +137,34 @@ append-only on-chain log. Use `get_audit_log(start, count)` for paginated access
 | `get_audit_log` | — | Paginated read of the audit trail |
 | `get_balance` | — | Query treasury token balance |
 | `is_frozen` | — | Query freeze state |
+
+## Staking Rewards Contract
+
+### Purpose
+Allows users to stake tokens in different pools to earn rewards from protocol revenue.
+
+### Pools
+- **30 Days**: 5.00% APY
+- **60 Days**: 10.00% APY
+- **90 Days**: 15.00% APY
+
+### Features
+- **Early Withdrawal Penalty**: 10% deduction from principal if withdrawn before the lockup period ends.
+- **Auto-compounding**: Users can re-stake their earned rewards into their principal.
+- **Reward Claiming**: Separate function to withdraw rewards without affecting the stake.
+
+### Key Structs
+
+```rust
+pub struct UserStake {
+    pub amount: i128,              // Staked amount
+    pub pool_id: u32,             // 0=30d, 1=60d, 2=90d
+    pub start_timestamp: u64,      // Initial staking time
+    pub last_claim_timestamp: u64, // Last time rewards were claimed
+}
+
+pub struct PoolConfig {
+    pub lockup_seconds: u64,
+    pub apy_bps: u32,              // APY in basis points (100 = 1%)
+}
+```

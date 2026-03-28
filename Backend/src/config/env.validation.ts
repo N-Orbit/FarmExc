@@ -85,6 +85,24 @@ class EnvironmentVariables {
   @IsNumber()
   INDEXER_REORG_DEPTH_THRESHOLD: number;
 
+  // Stripe Configuration
+  @IsString()
+  STRIPE_SECRET_KEY: string;
+
+  @IsString()
+  STRIPE_PUBLISHABLE_KEY: string;
+
+  @IsString()
+  STRIPE_WEBHOOK_SECRET: string;
+
+  @IsString()
+  STRIPE_PRICE_ID_STARTER: string;
+
+  @IsString()
+  STRIPE_PRICE_ID_PROFESSIONAL: string;
+
+  @IsString()
+  STRIPE_PRICE_ID_ENTERPRISE: string;
   // Logging Configuration
   @IsOptional()
   @IsEnum(LogLevel)
@@ -152,6 +170,58 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  IPFS_HOST?: string;
+
+  @IsOptional()
+  @IsNumber()
+  IPFS_PORT?: number;
+
+  @IsOptional()
+  @IsString()
+  IPFS_PROTOCOL?: string;
+
+  @IsOptional()
+  @IsString()
+  IPFS_PROJECT_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  IPFS_PROJECT_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  IPFS_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  IPFS_API_SECRET?: string;
+
+  @IsOptional()
+  @IsString()
+  IPFS_GATEWAY_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  ARWEAVE_WALLET_JSON?: string;
+
+  @IsOptional()
+  @IsString()
+  ARWEAVE_HOST?: string;
+
+  @IsOptional()
+  @IsNumber()
+  ARWEAVE_PORT?: number;
+
+  @IsOptional()
+  @IsString()
+  ARWEAVE_PROTOCOL?: string;
+
+  @IsOptional()
+  @IsString()
+  ARWEAVE_GATEWAY_URL?: string;
+
+  @IsOptional()
+  @IsString()
   S3_BACKUP_BUCKET?: string;
 
   @IsOptional()
@@ -209,6 +279,38 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   DR_TEST_SCHEDULE?: string;
+
+  @IsOptional()
+  @IsString()
+  DEPLOYMENT_ENVIRONMENT?: string;
+
+  @IsOptional()
+  @IsString()
+  DEPLOYMENT_SLOT?: string;
+
+  @IsOptional()
+  @IsString()
+  RELEASE_VERSION?: string;
+
+  @IsOptional()
+  @IsString()
+  RELEASE_COMMIT_SHA?: string;
+
+  @IsOptional()
+  @IsString()
+  RELEASE_BUILD_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  ACTIVE_COLOR?: string;
+
+  @IsOptional()
+  @IsString()
+  TRAFFIC_STATUS?: string;
+
+  @IsOptional()
+  @IsNumber()
+  WEBHOOK_REQUEST_TIMEOUT_MS?: number;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

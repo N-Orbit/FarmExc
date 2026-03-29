@@ -1,8 +1,8 @@
-use soroban_sdk::{
-    contracttype, symbol_short, Address, Env, Symbol, Vec, Map, Bytes, BytesN,
-    contracterror, require_auth
-};
 use shared::governance::{GovernanceManager, GovernanceRole};
+use soroban_sdk::{
+    contracterror, contracttype, require_auth, symbol_short, Address, Bytes, BytesN, Env, Map,
+    Symbol, Vec,
+};
 
 // Identity Hub data structure
 #[contracttype]
@@ -20,9 +20,9 @@ pub struct IdentityHub {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DataEntry {
     pub id: Symbol,
-    pub type_: Symbol,  // "credential", "profile", "document", etc.
-    pub encrypted_data: Bytes,  // Encrypted data payload
-    pub hash: Bytes,  // Hash of unencrypted data for integrity
+    pub type_: Symbol,         // "credential", "profile", "document", etc.
+    pub encrypted_data: Bytes, // Encrypted data payload
+    pub hash: Bytes,           // Hash of unencrypted data for integrity
     pub created_at: u64,
     pub expires_at: Option<u64>,
     pub metadata: Map<Symbol, Symbol>,
@@ -32,9 +32,9 @@ pub struct DataEntry {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Permission {
     pub id: Symbol,
-    pub granter_did: Symbol,  // DID granting permission
-    pub grantee_did: Symbol,  // DID receiving permission
-    pub data_entry_id: Symbol,  // Specific data entry this applies to
+    pub granter_did: Symbol,   // DID granting permission
+    pub grantee_did: Symbol,   // DID receiving permission
+    pub data_entry_id: Symbol, // Specific data entry this applies to
     pub permission_type: PermissionType,
     pub conditions: Vec<Condition>,
     pub created_at: u64,
@@ -55,9 +55,9 @@ pub enum PermissionType {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Condition {
-    pub type_: Symbol,  // "time_limit", "purpose", "revocation", etc.
+    pub type_: Symbol, // "time_limit", "purpose", "revocation", etc.
     pub value: Symbol,
-    pub operator: Symbol,  // "equals", "greater_than", "contains", etc.
+    pub operator: Symbol, // "equals", "greater_than", "contains", etc.
 }
 
 // Selective disclosure structure
@@ -68,8 +68,8 @@ pub struct SelectiveDisclosure {
     pub presenter_did: Symbol,
     pub verifier_did: Symbol,
     pub data_entry_id: Symbol,
-    pub disclosed_fields: Vec<Symbol>,  // Which fields to disclose
-    pub proof: Bytes,  // ZKP or signature proof
+    pub disclosed_fields: Vec<Symbol>, // Which fields to disclose
+    pub proof: Bytes,                  // ZKP or signature proof
     pub nonce: Bytes,
     pub created_at: u64,
     pub expires_at: u64,
@@ -95,24 +95,19 @@ pub struct IdentityHubContract;
 #[soroban_sdk::contractimpl]
 impl IdentityHubContract {
     // Initialize contract with governance
-    pub fn initialize(
-        env: Env,
-        admin: Address,
-        approvers: Vec<Address>,
-        executor: Address,
-    ) {
+    pub fn initialize(env: Env, admin: Address, approvers: Vec<Address>, executor: Address) {
         // Set up governance roles
         let roles_key = symbol_short!("roles");
         let mut role_map: Map<Address, GovernanceRole> = Map::new(&env);
-        
+
         role_map.set(admin.clone(), GovernanceRole::Admin);
         for approver in approvers.iter() {
             role_map.set(approver.clone(), GovernanceRole::Approver);
         }
         role_map.set(executor, GovernanceRole::Executor);
-        
+
         env.storage().persistent().set(&roles_key, &role_map);
-        
+
         // Initialize hub counter
         let counter_key = symbol_short!("hub_counter");
         env.storage().persistent().set(&counter_key, &0u64);
@@ -152,7 +147,7 @@ impl IdentityHubContract {
             .unwrap_or_else(|| Map::new(&env));
 
         hubs.set(hub_id.clone(), hub);
-        
+
         // Store owner to hub mapping
         let owner_map_key = symbol_short!("owner_to_hub");
         let mut owner_map: Map<Symbol, Symbol> = env
@@ -162,7 +157,7 @@ impl IdentityHubContract {
             .unwrap_or_else(|| Map::new(&env));
 
         owner_map.set(owner_did, hub_id.clone());
-        
+
         // Update storage
         env.storage().persistent().set(&hubs_key, &hubs);
         env.storage().persistent().set(&owner_map_key, &owner_map);
@@ -183,7 +178,7 @@ impl IdentityHubContract {
     ) -> Symbol {
         // Get hub
         let mut hub = Self::get_hub(env.clone(), hub_id.clone()).unwrap();
-        
+
         // Check authorization (owner only)
         let caller = env.current_contract_address();
         require_auth!(&caller);
@@ -230,13 +225,17 @@ impl IdentityHubContract {
     ) -> Symbol {
         // Get hub
         let mut hub = Self::get_hub(env.clone(), hub_id.clone()).unwrap();
-        
+
         // Check authorization (owner only)
         let caller = env.current_contract_address();
         require_auth!(&caller);
 
         // Verify data entry exists
-        if !hub.data_entries.iter().any(|entry| entry.id == data_entry_id) {
+        if !hub
+            .data_entries
+            .iter()
+            .any(|entry| entry.id == data_entry_id)
+        {
             panic!("Data entry not found");
         }
 
@@ -276,7 +275,7 @@ impl IdentityHubContract {
     pub fn revoke_permission(env: Env, hub_id: Symbol, permission_id: Symbol) {
         // Get hub
         let mut hub = Self::get_hub(env.clone(), hub_id.clone()).unwrap();
-        
+
         // Check authorization (owner only)
         let caller = env.current_contract_address();
         require_auth!(&caller);
@@ -316,13 +315,17 @@ impl IdentityHubContract {
     ) -> Symbol {
         // Get presenter's hub
         let hub = Self::get_hub_by_owner(env.clone(), presenter_did.clone()).unwrap();
-        
+
         // Check authorization (presenter must own the data)
         let caller = env.current_contract_address();
         require_auth!(&caller);
 
         // Verify data entry exists in hub
-        if !hub.data_entries.iter().any(|entry| entry.id == data_entry_id) {
+        if !hub
+            .data_entries
+            .iter()
+            .any(|entry| entry.id == data_entry_id)
+        {
             panic!("Data entry not found in presenter's hub");
         }
 
@@ -352,7 +355,9 @@ impl IdentityHubContract {
             .unwrap_or_else(|| Map::new(&env));
 
         disclosures.set(disclosure_id.clone(), disclosure);
-        env.storage().persistent().set(&disclosures_key, &disclosures);
+        env.storage()
+            .persistent()
+            .set(&disclosures_key, &disclosures);
         env.storage().persistent().set(&counter_key, &(count + 1));
 
         disclosure_id
@@ -393,7 +398,8 @@ impl IdentityHubContract {
         let hub = Self::get_hub(env.clone(), hub_id.clone()).unwrap();
 
         // Find data entry
-        let data_entry = hub.data_entries
+        let data_entry = hub
+            .data_entries
             .iter()
             .find(|entry| entry.id == data_entry_id)
             .ok_or(IdentityHubError::DataEntryNotFound)
@@ -409,11 +415,11 @@ impl IdentityHubContract {
         // Check permissions
         if hub.owner_did != requester_did {
             let has_permission = hub.permissions.iter().any(|perm| {
-                perm.active &&
-                perm.grantee_did == requester_did &&
-                perm.data_entry_id == data_entry_id &&
-                matches!(perm.permission_type, PermissionType::Read) &&
-                Self::check_conditions(env.clone(), &perm.conditions)
+                perm.active
+                    && perm.grantee_did == requester_did
+                    && perm.data_entry_id == data_entry_id
+                    && matches!(perm.permission_type, PermissionType::Read)
+                    && Self::check_conditions(env.clone(), &perm.conditions)
             });
 
             if !has_permission {
@@ -438,7 +444,9 @@ impl IdentityHubContract {
             .get(&owner_map_key)
             .ok_or(IdentityHubError::HubNotFound)?;
 
-        owner_map.get(owner_did).ok_or(IdentityHubError::HubNotFound)
+        owner_map
+            .get(owner_did)
+            .ok_or(IdentityHubError::HubNotFound)
     }
 
     // Get hub count
@@ -459,7 +467,10 @@ impl IdentityHubContract {
         hubs.get(hub_id).ok_or(IdentityHubError::HubNotFound)
     }
 
-    fn get_disclosure(env: Env, disclosure_id: Symbol) -> Result<SelectiveDisclosure, IdentityHubError> {
+    fn get_disclosure(
+        env: Env,
+        disclosure_id: Symbol,
+    ) -> Result<SelectiveDisclosure, IdentityHubError> {
         let disclosures_key = symbol_short!("disclosures");
         let disclosures: Map<Symbol, SelectiveDisclosure> = env
             .storage()
@@ -467,7 +478,9 @@ impl IdentityHubContract {
             .get(&disclosures_key)
             .ok_or(IdentityHubError::DataEntryNotFound)?;
 
-        disclosures.get(disclosure_id).ok_or(IdentityHubError::DataEntryNotFound)
+        disclosures
+            .get(disclosure_id)
+            .ok_or(IdentityHubError::DataEntryNotFound)
     }
 
     fn check_conditions(env: Env, conditions: &Vec<Condition>) -> bool {

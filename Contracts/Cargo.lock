@@ -1251,6 +1251,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "stellara-liquidity-mining"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
+name = "stellara-staking-rewards"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1271,6 +1285,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tcr"
+version = "0.1.0"
+dependencies = [
+ "shared",
+ "soroban-sdk",
 ]
 
 [[package]]

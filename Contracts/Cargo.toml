@@ -8,6 +8,8 @@ members = [
     "contracts/fee-distribution",
 
     "contracts/tcr",
+    "contracts/staking-rewards",
+    "contracts/liquidity-mining",
     "integration-tests",
     "shared",
 ]

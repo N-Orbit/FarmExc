@@ -1,7 +1,7 @@
 #![no_std]
 
 use shared::acl::ACL;
-use soroban_sdk::{contract, contractimpl, contracttype, Address, Env, Symbol, token};
+use soroban_sdk::{contract, contractimpl, contracttype, token, Address, Env, Symbol};
 
 #[contract]
 pub struct FeeDistributionContract;
@@ -95,8 +95,12 @@ impl FeeDistributionContract {
         ACL::assign_permission(&env, &admin_role, &Symbol::new(&env, "set_recips"));
 
         env.storage().persistent().set(&storage_keys::INIT, &true);
-        env.storage().persistent().set(&storage_keys::SPLITS, &splits);
-        env.storage().persistent().set(&storage_keys::RECIPIENTS, &recipients);
+        env.storage()
+            .persistent()
+            .set(&storage_keys::SPLITS, &splits);
+        env.storage()
+            .persistent()
+            .set(&storage_keys::RECIPIENTS, &recipients);
 
         Ok(())
     }
@@ -106,27 +110,31 @@ impl FeeDistributionContract {
         admin.require_auth();
         ACL::require_permission(&env, &admin, &Symbol::new(&env, "set_splits"));
         validate_splits(&splits)?;
-        env.storage().persistent().set(&storage_keys::SPLITS, &splits);
-        
+        env.storage()
+            .persistent()
+            .set(&storage_keys::SPLITS, &splits);
+
         // Emit event
-        env.events().publish(
-            (Symbol::new(&env, "splits_u"),),
-            splits
-        );
+        env.events()
+            .publish((Symbol::new(&env, "splits_u"),), splits);
         Ok(())
     }
 
     /// Update fee recipients (Governance/Admin protected)
-    pub fn set_recipients(env: Env, admin: Address, recipients: FeeRecipients) -> Result<(), FeeDistError> {
+    pub fn set_recipients(
+        env: Env,
+        admin: Address,
+        recipients: FeeRecipients,
+    ) -> Result<(), FeeDistError> {
         admin.require_auth();
         ACL::require_permission(&env, &admin, &Symbol::new(&env, "set_recips"));
-        env.storage().persistent().set(&storage_keys::RECIPIENTS, &recipients);
-        
+        env.storage()
+            .persistent()
+            .set(&storage_keys::RECIPIENTS, &recipients);
+
         // Emit event
-        env.events().publish(
-            (Symbol::new(&env, "recips_u"),),
-            recipients
-        );
+        env.events()
+            .publish((Symbol::new(&env, "recips_u"),), recipients);
         Ok(())
     }
 
@@ -149,13 +157,10 @@ impl FeeDistributionContract {
     }
 
     /// Distribute tokens currently held by this contract
-    pub fn distribute_held_fees(
-        env: Env,
-        token: Address,
-    ) -> Result<(), FeeDistError> {
+    pub fn distribute_held_fees(env: Env, token: Address) -> Result<(), FeeDistError> {
         let token_client = token::Client::new(&env, &token);
         let amount = token_client.balance(&env.current_contract_address());
-        
+
         if amount <= 0 {
             return Ok(());
         }
@@ -164,16 +169,28 @@ impl FeeDistributionContract {
     }
 
     pub fn get_splits(env: Env) -> Result<FeeSplits, FeeDistError> {
-        env.storage().persistent().get(&storage_keys::SPLITS).ok_or(FeeDistError::NotInitialized)
+        env.storage()
+            .persistent()
+            .get(&storage_keys::SPLITS)
+            .ok_or(FeeDistError::NotInitialized)
     }
 
     pub fn get_recipients(env: Env) -> Result<FeeRecipients, FeeDistError> {
-        env.storage().persistent().get(&storage_keys::RECIPIENTS).ok_or(FeeDistError::NotInitialized)
+        env.storage()
+            .persistent()
+            .get(&storage_keys::RECIPIENTS)
+            .ok_or(FeeDistError::NotInitialized)
     }
 
     pub fn get_stats(env: Env, token: Address) -> FeeStats {
-        env.storage().persistent().get(&DataKey::Stats(token))
-            .unwrap_or(FeeStats { total_treasury: 0, total_staking: 0, total_burn: 0 })
+        env.storage()
+            .persistent()
+            .get(&DataKey::Stats(token))
+            .unwrap_or(FeeStats {
+                total_treasury: 0,
+                total_staking: 0,
+                total_burn: 0,
+            })
     }
 }
 
@@ -183,45 +200,60 @@ fn _distribute(
     source: &Address,
     amount: i128,
 ) -> Result<(), FeeDistError> {
-    let splits: FeeSplits = env.storage().persistent().get(&storage_keys::SPLITS)
+    let splits: FeeSplits = env
+        .storage()
+        .persistent()
+        .get(&storage_keys::SPLITS)
         .ok_or(FeeDistError::NotInitialized)?;
-        let recipients: FeeRecipients = env.storage().persistent().get(&storage_keys::RECIPIENTS)
-            .ok_or(FeeDistError::NotInitialized)?;
+    let recipients: FeeRecipients = env
+        .storage()
+        .persistent()
+        .get(&storage_keys::RECIPIENTS)
+        .ok_or(FeeDistError::NotInitialized)?;
 
-        let treasury_amount = (amount * splits.treasury_bps as i128) / BPS_DENOMINATOR as i128;
-        let staking_amount = (amount * splits.staking_bps as i128) / BPS_DENOMINATOR as i128;
-        let burn_amount = amount - treasury_amount - staking_amount;
+    let treasury_amount = (amount * splits.treasury_bps as i128) / BPS_DENOMINATOR as i128;
+    let staking_amount = (amount * splits.staking_bps as i128) / BPS_DENOMINATOR as i128;
+    let burn_amount = amount - treasury_amount - staking_amount;
 
-        let token_client = token::Client::new(env, token);
-        let contract_address = env.current_contract_address();
+    let token_client = token::Client::new(env, token);
+    let contract_address = env.current_contract_address();
 
-        if treasury_amount > 0 {
-            token_client.transfer(&contract_address, &recipients.treasury, &treasury_amount);
-        }
-        if staking_amount > 0 {
-            token_client.transfer(&contract_address, &recipients.staking, &staking_amount);
-        }
-        if burn_amount > 0 {
-            token_client.transfer(&contract_address, &recipients.burn, &burn_amount);
-        }
+    if treasury_amount > 0 {
+        token_client.transfer(&contract_address, &recipients.treasury, &treasury_amount);
+    }
+    if staking_amount > 0 {
+        token_client.transfer(&contract_address, &recipients.staking, &staking_amount);
+    }
+    if burn_amount > 0 {
+        token_client.transfer(&contract_address, &recipients.burn, &burn_amount);
+    }
 
-        // Update stats
-        let mut stats: FeeStats = env.storage().persistent().get(&DataKey::Stats(token.clone()))
-            .unwrap_or(FeeStats { total_treasury: 0, total_staking: 0, total_burn: 0 });
-        
-        stats.total_treasury += treasury_amount;
-        stats.total_staking += staking_amount;
-        stats.total_burn += burn_amount;
+    // Update stats
+    let mut stats: FeeStats = env
+        .storage()
+        .persistent()
+        .get(&DataKey::Stats(token.clone()))
+        .unwrap_or(FeeStats {
+            total_treasury: 0,
+            total_staking: 0,
+            total_burn: 0,
+        });
 
-        env.storage().persistent().set(&DataKey::Stats(token.clone()), &stats);
+    stats.total_treasury += treasury_amount;
+    stats.total_staking += staking_amount;
+    stats.total_burn += burn_amount;
 
-        // Emit event
-        env.events().publish(
-            (Symbol::new(env, "fee_dist"), token.clone(), source.clone()),
-            (treasury_amount, staking_amount, burn_amount)
-        );
+    env.storage()
+        .persistent()
+        .set(&DataKey::Stats(token.clone()), &stats);
 
-        Ok(())
+    // Emit event
+    env.events().publish(
+        (Symbol::new(env, "fee_dist"), token.clone(), source.clone()),
+        (treasury_amount, staking_amount, burn_amount),
+    );
+
+    Ok(())
 }
 
 #[cfg(test)]

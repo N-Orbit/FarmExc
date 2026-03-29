@@ -1,8 +1,8 @@
-use soroban_sdk::{
-    contracttype, symbol_short, Address, Env, Symbol, Vec, Map, Bytes, BytesN,
-    contracterror, require_auth
-};
 use shared::governance::{GovernanceManager, GovernanceRole};
+use soroban_sdk::{
+    contracterror, contracttype, require_auth, symbol_short, Address, Bytes, BytesN, Env, Map,
+    Symbol, Vec,
+};
 
 // Verifiable Credential structure
 #[contracttype]
@@ -11,7 +11,7 @@ pub struct VerifiableCredential {
     pub id: Symbol,
     pub context: Symbol,
     pub type_: Vec<Symbol>,
-    pub issuer: Symbol,  // DID of issuer
+    pub issuer: Symbol, // DID of issuer
     pub issuance_date: u64,
     pub expiration_date: Option<u64>,
     pub credential_subject: CredentialSubject,
@@ -23,8 +23,8 @@ pub struct VerifiableCredential {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CredentialSubject {
-    pub id: Symbol,  // DID of subject
-    pub claims: Map<Symbol, Symbol>,  // Key-value pairs of claims
+    pub id: Symbol,                  // DID of subject
+    pub claims: Map<Symbol, Symbol>, // Key-value pairs of claims
 }
 
 #[contracttype]
@@ -34,7 +34,7 @@ pub struct Proof {
     pub created: u64,
     pub verification_method: Symbol,
     pub proof_purpose: Symbol,
-    pub proof_value: Bytes,  // Base64 encoded signature
+    pub proof_value: Bytes, // Base64 encoded signature
     pub domain: Option<Symbol>,
 }
 
@@ -43,7 +43,7 @@ pub struct Proof {
 pub struct CredentialStatus {
     pub id: Symbol,
     pub type_: Symbol,
-    pub status: Symbol,  // "valid", "revoked", "suspended"
+    pub status: Symbol, // "valid", "revoked", "suspended"
     pub revocation_reason: Option<Symbol>,
 }
 
@@ -64,7 +64,7 @@ pub enum CredentialType {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RevocationEntry {
     pub credential_id: Symbol,
-    pub revoker: Symbol,  // DID of revoker
+    pub revoker: Symbol, // DID of revoker
     pub revocation_date: u64,
     pub reason: Symbol,
     pub proof: Bytes,
@@ -90,24 +90,19 @@ pub struct VerifiableCredentialsContract;
 #[soroban_sdk::contractimpl]
 impl VerifiableCredentialsContract {
     // Initialize contract with governance
-    pub fn initialize(
-        env: Env,
-        admin: Address,
-        approvers: Vec<Address>,
-        executor: Address,
-    ) {
+    pub fn initialize(env: Env, admin: Address, approvers: Vec<Address>, executor: Address) {
         // Set up governance roles
         let roles_key = symbol_short!("roles");
         let mut role_map: Map<Address, GovernanceRole> = Map::new(&env);
-        
+
         role_map.set(admin.clone(), GovernanceRole::Admin);
         for approver in approvers.iter() {
             role_map.set(approver.clone(), GovernanceRole::Approver);
         }
         role_map.set(executor, GovernanceRole::Executor);
-        
+
         env.storage().persistent().set(&roles_key, &role_map);
-        
+
         // Initialize credential counter
         let counter_key = symbol_short!("vc_counter");
         env.storage().persistent().set(&counter_key, &0u64);
@@ -115,7 +110,9 @@ impl VerifiableCredentialsContract {
         // Initialize revocation registry
         let revocation_key = symbol_short!("revocations");
         let revocations: Map<Symbol, RevocationEntry> = Map::new(&env);
-        env.storage().persistent().set(&revocation_key, &revocations);
+        env.storage()
+            .persistent()
+            .set(&revocation_key, &revocations);
     }
 
     // Issue a verifiable credential
@@ -140,12 +137,20 @@ impl VerifiableCredentialsContract {
         // Create credential type vector
         let mut type_vec = Vec::new(&env);
         type_vec.push_back(symbol_short!("VerifiableCredential"));
-        
+
         match credential_type {
-            CredentialType::KYCVerified => type_vec.push_back(symbol_short!("KYCVerifiedCredential")),
-            CredentialType::AccreditedInvestor => type_vec.push_back(symbol_short!("AccreditedInvestorCredential")),
-            CredentialType::EducationalAchievement => type_vec.push_back(symbol_short!("EducationalAchievementCredential")),
-            CredentialType::ProfessionalLicense => type_vec.push_back(symbol_short!("ProfessionalLicenseCredential")),
+            CredentialType::KYCVerified => {
+                type_vec.push_back(symbol_short!("KYCVerifiedCredential"))
+            }
+            CredentialType::AccreditedInvestor => {
+                type_vec.push_back(symbol_short!("AccreditedInvestorCredential"))
+            }
+            CredentialType::EducationalAchievement => {
+                type_vec.push_back(symbol_short!("EducationalAchievementCredential"))
+            }
+            CredentialType::ProfessionalLicense => {
+                type_vec.push_back(symbol_short!("ProfessionalLicenseCredential"))
+            }
             CredentialType::Custom => type_vec.push_back(symbol_short!("CustomCredential")),
         }
 
@@ -186,7 +191,9 @@ impl VerifiableCredentialsContract {
             .unwrap_or_else(|| Map::new(&env));
 
         credentials.set(credential_id.clone(), credential);
-        env.storage().persistent().set(&credentials_key, &credentials);
+        env.storage()
+            .persistent()
+            .set(&credentials_key, &credentials);
 
         // Update counter
         env.storage().persistent().set(&counter_key, &(count + 1));
@@ -260,7 +267,9 @@ impl VerifiableCredentialsContract {
             .unwrap_or_else(|| Map::new(&env));
 
         revocations.set(credential_id.clone(), revocation);
-        env.storage().persistent().set(&revocations_key, &revocations);
+        env.storage()
+            .persistent()
+            .set(&revocations_key, &revocations);
 
         // Update credential status
         if let Some(mut status) = credential.credential_status {
@@ -278,7 +287,9 @@ impl VerifiableCredentialsContract {
             .unwrap_or_else(|| Map::new(&env));
 
         credentials.set(credential_id, credential);
-        env.storage().persistent().set(&credentials_key, &credentials);
+        env.storage()
+            .persistent()
+            .set(&credentials_key, &credentials);
     }
 
     // Get credential details
@@ -377,6 +388,8 @@ impl VerifiableCredentialsContract {
             .get(&credentials_key)
             .ok_or(VCError::CredentialNotFound)?;
 
-        credentials.get(credential_id).ok_or(VCError::CredentialNotFound)
+        credentials
+            .get(credential_id)
+            .ok_or(VCError::CredentialNotFound)
     }
 }

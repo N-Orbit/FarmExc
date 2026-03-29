@@ -1,8 +1,8 @@
-use soroban_sdk::{
-    contracttype, symbol_short, Address, Env, Symbol, Vec, Map, Bytes, BytesN,
-    contracterror, require_auth
-};
 use shared::governance::{GovernanceManager, GovernanceRole};
+use soroban_sdk::{
+    contracterror, contracttype, require_auth, symbol_short, Address, Bytes, BytesN, Env, Map,
+    Symbol, Vec,
+};
 
 // DID Document structure
 #[contracttype]
@@ -23,7 +23,7 @@ pub struct DIDDocument {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct VerificationMethod {
     pub id: Symbol,
-    pub type_: Symbol,  // "Ed25519VerificationKey2018", etc.
+    pub type_: Symbol, // "Ed25519VerificationKey2018", etc.
     pub controller: Symbol,
     pub public_key: Bytes, // Multibase encoded public key
     pub created_at: u64,
@@ -67,24 +67,19 @@ pub struct DIDRegistryContract;
 #[soroban_sdk::contractimpl]
 impl DIDRegistryContract {
     // Initialize contract with governance
-    pub fn initialize(
-        env: Env,
-        admin: Address,
-        approvers: Vec<Address>,
-        executor: Address,
-    ) {
+    pub fn initialize(env: Env, admin: Address, approvers: Vec<Address>, executor: Address) {
         // Set up governance roles
         let roles_key = symbol_short!("roles");
         let mut role_map: Map<Address, GovernanceRole> = Map::new(&env);
-        
+
         role_map.set(admin.clone(), GovernanceRole::Admin);
         for approver in approvers.iter() {
             role_map.set(approver.clone(), GovernanceRole::Approver);
         }
         role_map.set(executor, GovernanceRole::Executor);
-        
+
         env.storage().persistent().set(&roles_key, &role_map);
-        
+
         // Initialize DID counter
         let counter_key = symbol_short!("did_counter");
         env.storage().persistent().set(&counter_key, &0u64);
@@ -214,10 +209,10 @@ impl DIDRegistryContract {
         services: Option<Vec<Service>>,
     ) {
         let caller = env.current_contract_address();
-        
+
         // Get existing document
         let mut document = Self::get_did_document(env.clone(), did.clone()).unwrap();
-        
+
         // Check if caller is authorized (simplified - in production, use proper DID auth)
         require_auth!(&caller);
 
@@ -228,7 +223,7 @@ impl DIDRegistryContract {
         // Update verification methods if provided
         if let Some(new_vms) = verification_methods {
             document.verification_methods = new_vms;
-            
+
             // Update authentication list
             document.authentication = Vec::new(&env);
             for vm in document.verification_methods.iter() {
@@ -258,10 +253,10 @@ impl DIDRegistryContract {
     // Deactivate DID
     pub fn deactivate_did(env: Env, did: Symbol) {
         let caller = env.current_contract_address();
-        
+
         // Get existing document
         let mut document = Self::get_did_document(env.clone(), did.clone()).unwrap();
-        
+
         // Check authorization
         require_auth!(&caller);
 
@@ -285,16 +280,12 @@ impl DIDRegistryContract {
     }
 
     // Add verification method
-    pub fn add_verification_method(
-        env: Env,
-        did: Symbol,
-        verification_method: VerificationMethod,
-    ) {
+    pub fn add_verification_method(env: Env, did: Symbol, verification_method: VerificationMethod) {
         let caller = env.current_contract_address();
-        
+
         // Get existing document
         let mut document = Self::get_did_document(env.clone(), did.clone()).unwrap();
-        
+
         // Check authorization
         require_auth!(&caller);
 
@@ -309,7 +300,9 @@ impl DIDRegistryContract {
             }
         }
 
-        document.verification_methods.push_back(verification_method.clone());
+        document
+            .verification_methods
+            .push_back(verification_method.clone());
         document.authentication.push_back(verification_method.id);
         document.updated_at = env.ledger().timestamp();
 
@@ -328,10 +321,10 @@ impl DIDRegistryContract {
     // Add service
     pub fn add_service(env: Env, did: Symbol, service: Service) {
         let caller = env.current_contract_address();
-        
+
         // Get existing document
         let mut document = Self::get_did_document(env.clone(), did.clone()).unwrap();
-        
+
         // Check authorization
         require_auth!(&caller);
 

@@ -16,7 +16,7 @@ mod storage_keys {
     pub const USER_LP_STAKE: Symbol = symbol_short!("u_lp"); // User LP balances
     pub const USER_LOCKED_REWARDS: Symbol = symbol_short!("u_locked"); // User locked rewards for governance
     pub const TOTAL_LP_STAKED: Symbol = symbol_short!("total_lp");
-    pub const LAST_REWARD_BLOCK: Symbol = symbol_short!("last_reward");
+    pub const LAST_REWARD_BLOCK: Symbol = symbol_short!("last_rew");
     pub const MULTIPLIER_CONFIG: Symbol = symbol_short!("mult_cfg");
     pub const PAIR_LIST: Symbol = symbol_short!("pair_list");
     pub const INITIALIZED: Symbol = symbol_short!("init");
@@ -46,9 +46,9 @@ pub enum LiquidityMiningError {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PairConfig {
     pub pair_id: u32,
-    pub pair_symbol: Symbol,      // e.g., "USDC_STELLAR"
-    pub emissions_per_block: i128, // Reward tokens per block
-    pub total_allocated: i128,    // Total rewards allocated to this pair
+    pub pair_symbol: Symbol,                // e.g., "USDC_STELLAR"
+    pub emissions_per_block: i128,          // Reward tokens per block
+    pub total_allocated: i128,              // Total rewards allocated to this pair
     pub accumulated_reward_per_share: i128, // Used for tracking cumulative rewards
     pub last_update_block: u64,
     pub active: bool,
@@ -60,10 +60,10 @@ pub struct PairConfig {
 pub struct LPStake {
     pub user: Address,
     pub pair_id: u32,
-    pub lp_balance: i128,            // Amount of LP tokens staked
-    pub start_timestamp: u64,        // When they started providing liquidity
-    pub reward_debt: i128,           // Tracks claimed rewards to prevent double-counting
-    pub bonus_multiplier_tier: u32,  // 0=none, 1=2x, 2=3x, 3=5x based on lockup
+    pub lp_balance: i128,           // Amount of LP tokens staked
+    pub start_timestamp: u64,       // When they started providing liquidity
+    pub reward_debt: i128,          // Tracks claimed rewards to prevent double-counting
+    pub bonus_multiplier_tier: u32, // 0=none, 1=2x, 2=3x, 3=5x based on lockup
 }
 
 /// Emission schedule configuration
@@ -82,12 +82,12 @@ pub struct EmissionSchedule {
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MultiplierConfig {
-    pub lockup_tier_1_days: u64,   // 30 days = 2x multiplier
-    pub multiplier_tier_1: u32,    // 200 (2x)
-    pub lockup_tier_2_days: u64,   // 90 days = 3x multiplier
-    pub multiplier_tier_2: u32,    // 300 (3x)
-    pub lockup_tier_3_days: u64,   // 180 days = 5x multiplier
-    pub multiplier_tier_3: u32,    // 500 (5x)
+    pub lockup_tier_1_days: u64, // 30 days = 2x multiplier
+    pub multiplier_tier_1: u32,  // 200 (2x)
+    pub lockup_tier_2_days: u64, // 90 days = 3x multiplier
+    pub multiplier_tier_2: u32,  // 300 (3x)
+    pub lockup_tier_3_days: u64, // 180 days = 5x multiplier
+    pub multiplier_tier_3: u32,  // 500 (5x)
 }
 
 /// Event: Liquidity provided
@@ -168,11 +168,11 @@ impl LiquidityMiningContract {
         // Default multiplier configuration
         let multiplier_config = MultiplierConfig {
             lockup_tier_1_days: 30,
-            multiplier_tier_1: 200,    // 2x
+            multiplier_tier_1: 200, // 2x
             lockup_tier_2_days: 90,
-            multiplier_tier_2: 300,    // 3x
+            multiplier_tier_2: 300, // 3x
             lockup_tier_3_days: 180,
-            multiplier_tier_3: 500,    // 5x
+            multiplier_tier_3: 500, // 5x
         };
         env.storage()
             .instance()
@@ -181,9 +181,10 @@ impl LiquidityMiningContract {
         env.storage()
             .instance()
             .set(&storage_keys::TOTAL_LP_STAKED, &0i128);
-        env.storage()
-            .instance()
-            .set(&storage_keys::LAST_REWARD_BLOCK, &env.ledger().sequence());
+        env.storage().instance().set(
+            &storage_keys::LAST_REWARD_BLOCK,
+            &(env.ledger().sequence() as u64),
+        );
 
         env.storage()
             .instance()
@@ -218,11 +219,11 @@ impl LiquidityMiningContract {
             return Err(LiquidityMiningError::InvalidAmount);
         }
 
-        let current_block = env.ledger().sequence();
+        let current_block = env.ledger().sequence() as u64;
 
         let pair_config = PairConfig {
             pair_id,
-            pair_symbol,
+            pair_symbol: pair_symbol.clone(),
             emissions_per_block,
             total_allocated,
             accumulated_reward_per_share: 0,
@@ -251,7 +252,7 @@ impl LiquidityMiningContract {
 
         env.events().publish(
             (symbol_short!("pair_new"),),
-            (pair_id, pair_symbol, emissions_per_block),
+            (pair_id, pair_symbol.clone(), emissions_per_block),
         );
 
         Ok(())
@@ -288,18 +289,18 @@ impl LiquidityMiningContract {
 
         // Get or create user LP stake
         let stake_key = (symbol_short!("lp_stake"), user.clone(), pair_id);
-        let mut user_stake: LPStake = env
-            .storage()
-            .persistent()
-            .get(&stake_key)
-            .unwrap_or(LPStake {
-                user: user.clone(),
-                pair_id,
-                lp_balance: 0,
-                start_timestamp: env.ledger().timestamp(),
-                reward_debt: 0,
-                bonus_multiplier_tier: 0,
-            });
+        let mut user_stake: LPStake =
+            env.storage()
+                .persistent()
+                .get(&stake_key)
+                .unwrap_or(LPStake {
+                    user: user.clone(),
+                    pair_id,
+                    lp_balance: 0,
+                    start_timestamp: env.ledger().timestamp(),
+                    reward_debt: 0,
+                    bonus_multiplier_tier: 0,
+                });
 
         // Transfer LP tokens to contract
         let lp_token: Address = env
@@ -387,9 +388,9 @@ impl LiquidityMiningContract {
         Self::update_pair_rewards(&env, pair_id)?;
 
         // Calculate and transfer pending rewards before withdrawal
-        let pending_reward = Self::calculate_pending_reward(&env, user.clone(), pair_id)?;
+        let pending_reward = Self::calculate_pending_reward(&env, &user, pair_id)?;
         if pending_reward > 0 {
-            Self::claim_rewards_internal(&env, user.clone(), pair_id, pending_reward)?;
+            Self::claim_rewards_internal(&env, &user, pair_id, pending_reward)?;
         }
 
         user_stake.lp_balance -= lp_amount;
@@ -443,7 +444,7 @@ impl LiquidityMiningContract {
         }
 
         // Calculate pending rewards
-        let pending_reward = Self::calculate_pending_reward(&env, user.clone(), pair_id)?;
+        let pending_reward = Self::calculate_pending_reward(&env, &user, pair_id)?;
 
         if pending_reward <= 0 {
             return Err(LiquidityMiningError::NoRewardsToClaim);
@@ -454,16 +455,12 @@ impl LiquidityMiningContract {
 
         // Store locked governance power
         let locked_key = (symbol_short!("locked"), user.clone());
-        let mut locked_rewards: i128 = env
-            .storage()
-            .persistent()
-            .get(&locked_key)
-            .unwrap_or(0);
+        let mut locked_rewards: i128 = env.storage().persistent().get(&locked_key).unwrap_or(0);
         locked_rewards += governance_amount;
         env.storage().persistent().set(&locked_key, &locked_rewards);
 
         // Claim the remaining 50% normally
-        Self::claim_rewards_internal(&env, user.clone(), pair_id, pending_reward)?;
+        Self::claim_rewards_internal(&env, &user, pair_id, pending_reward)?;
 
         env.events().publish(
             (symbol_short!("gov_lock"),),
@@ -488,17 +485,21 @@ impl LiquidityMiningContract {
         Self::require_initialized(&env)?;
 
         // Calculate pending rewards
-        let pending_reward = Self::calculate_pending_reward(&env, user.clone(), pair_id)?;
+        let pending_reward = Self::calculate_pending_reward(&env, &user, pair_id)?;
 
         if pending_reward <= 0 {
             return Err(LiquidityMiningError::NoRewardsToClaim);
         }
 
-        Self::claim_rewards_internal(&env, user.clone(), pair_id, pending_reward)
+        Self::claim_rewards_internal(&env, &user, pair_id, pending_reward)
     }
 
     /// Get user's LP balance for a pair
-    pub fn get_lp_balance(env: Env, user: Address, pair_id: u32) -> Result<i128, LiquidityMiningError> {
+    pub fn get_lp_balance(
+        env: Env,
+        user: Address,
+        pair_id: u32,
+    ) -> Result<i128, LiquidityMiningError> {
         Self::require_initialized(&env)?;
 
         let stake_key = (symbol_short!("lp_stake"), user, pair_id);
@@ -518,7 +519,7 @@ impl LiquidityMiningContract {
         pair_id: u32,
     ) -> Result<i128, LiquidityMiningError> {
         Self::require_initialized(&env)?;
-        Self::calculate_pending_reward(&env, user, pair_id)
+        Self::calculate_pending_reward(&env, &user, pair_id)
     }
 
     /// Get governance power (locked rewards)
@@ -526,11 +527,7 @@ impl LiquidityMiningContract {
         Self::require_initialized(&env)?;
 
         let locked_key = (symbol_short!("locked"), user);
-        let governance_power: i128 = env
-            .storage()
-            .persistent()
-            .get(&locked_key)
-            .unwrap_or(0);
+        let governance_power: i128 = env.storage().persistent().get(&locked_key).unwrap_or(0);
 
         Ok(governance_power)
     }
@@ -589,7 +586,7 @@ impl LiquidityMiningContract {
 
     fn claim_rewards_internal(
         env: &Env,
-        user: Address,
+        user: &Address,
         pair_id: u32,
         pending_reward: i128,
     ) -> Result<i128, LiquidityMiningError> {
@@ -628,7 +625,7 @@ impl LiquidityMiningContract {
         env.events().publish(
             (symbol_short!("reward_cl"),),
             RewardsClaimed {
-                user,
+                user: user.clone(),
                 pair_id,
                 reward_amount: pending_reward,
                 governance_locked: 0,
@@ -641,7 +638,7 @@ impl LiquidityMiningContract {
 
     fn calculate_pending_reward(
         env: &Env,
-        user: Address,
+        user: &Address,
         pair_id: u32,
     ) -> Result<i128, LiquidityMiningError> {
         let stake_key = (symbol_short!("lp_stake"), user.clone(), pair_id);
@@ -668,13 +665,16 @@ impl LiquidityMiningContract {
             return Ok(0);
         }
 
-        let blocks_since_last_claim = env.ledger().sequence() - pair_config.last_update_block;
+        let blocks_since_last_claim =
+            (env.ledger().sequence() as u64).saturating_sub(pair_config.last_update_block);
         let reward_per_block = pair_config.emissions_per_block;
-        let user_reward_share = (user_stake.lp_balance * reward_per_block * blocks_since_last_claim) / total_staked;
+        let user_reward_share =
+            (user_stake.lp_balance * reward_per_block * blocks_since_last_claim as i128)
+                / total_staked;
 
         // Apply bonus multiplier if applicable
         let multiplier = Self::get_bonus_multiplier(&env, user_stake.bonus_multiplier_tier)?;
-        let final_reward = (user_reward_share * multiplier) / 100;
+        let final_reward = (user_reward_share * multiplier as i128) / 100;
 
         Ok(final_reward - user_stake.reward_debt)
     }
@@ -687,7 +687,7 @@ impl LiquidityMiningContract {
             .get(&pair_key)
             .ok_or(LiquidityMiningError::InvalidPair)?;
 
-        pair_config.last_update_block = env.ledger().sequence();
+        pair_config.last_update_block = env.ledger().sequence() as u64;
         env.storage().persistent().set(&pair_key, &pair_config);
 
         Ok(())
@@ -695,10 +695,10 @@ impl LiquidityMiningContract {
 
     fn get_bonus_multiplier(env: &Env, tier: u32) -> Result<u32, LiquidityMiningError> {
         match tier {
-            0 => Ok(100),  // 1x
-            1 => Ok(200),  // 2x
-            2 => Ok(300),  // 3x
-            3 => Ok(500),  // 5x
+            0 => Ok(100), // 1x
+            1 => Ok(200), // 2x
+            2 => Ok(300), // 3x
+            3 => Ok(500), // 5x
             _ => Err(LiquidityMiningError::InvalidMultiplier),
         }
     }

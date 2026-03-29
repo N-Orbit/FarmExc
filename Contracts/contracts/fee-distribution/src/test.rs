@@ -1,10 +1,7 @@
 #![cfg(test)]
 
-use soroban_sdk::{
-    testutils::Address as _,
-    Env, Address,
-};
-use crate::{FeeDistributionContract, FeeDistributionContractClient, FeeSplits, FeeRecipients};
+use crate::{FeeDistributionContract, FeeDistributionContractClient, FeeRecipients, FeeSplits};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 fn setup_test(env: &Env) -> (FeeDistributionContractClient<'_>, Address, FeeRecipients) {
     let contract_id = env.register_contract(None, FeeDistributionContract);
@@ -59,7 +56,7 @@ fn test_distribution() {
     let token_id = env.register_stellar_asset_contract(token_admin.clone());
     let token_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
     token_client.mint(&payer, &10000);
-    
+
     // Execute distribution
     let amount = 10000i128;
     client.distribute_fees(&token_id, &payer, &amount);
@@ -112,7 +109,7 @@ fn test_distribute_held_fees() {
     let token_admin = Address::generate(&env);
     let token_id = env.register_stellar_asset_contract(token_admin.clone());
     let token_client = soroban_sdk::token::StellarAssetClient::new(&env, &token_id);
-    
+
     // Manually mint to the contract
     token_client.mint(&client.address, &10000);
 

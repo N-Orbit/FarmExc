@@ -422,7 +422,8 @@ impl UpgradeableTradingContract {
         let distributor: Option<Address> = storage.get(&storage_keys::FEE_DIST);
         if let Some(dist_addr) = distributor {
             if fee_recipient == dist_addr {
-                let dist_client = fee_distribution::FeeDistributionContractClient::new(&env, &dist_addr);
+                let dist_client =
+                    fee_distribution::FeeDistributionContractClient::new(&env, &dist_addr);
                 dist_client.distribute_fees(&fee_token, &trader, &fee_amount);
             } else {
                 FeeManager::collect_fee(&env, &fee_token, &trader, &fee_recipient, fee_amount)
@@ -720,7 +721,9 @@ impl UpgradeableTradingContract {
         admin.require_auth();
         require_initialized(&env)?;
         ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
-        env.storage().persistent().set(&storage_keys::FEE_DIST, &distributor);
+        env.storage()
+            .persistent()
+            .set(&storage_keys::FEE_DIST, &distributor);
         Ok(())
     }
 

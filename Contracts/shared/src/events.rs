@@ -39,6 +39,7 @@ pub mod topics {
     pub const CLAIM_PAID: Symbol = symbol_short!("claim_paid");
     pub const LIQUIDITY_DEPOSITED: Symbol = symbol_short!("liq_dep");
     pub const LIQUIDITY_WITHDRAWN: Symbol = symbol_short!("liq_wdraw");
+    pub const SWAP_EXECUTED: Symbol = symbol_short!("swap");
 
     // Token events (for reference - already implemented in token contract)
     pub const TRANSFER: Symbol = symbol_short!("transfer");
@@ -107,6 +108,45 @@ pub struct FeeCollectedEvent {
     /// Token used for payment
     pub token: Address,
     /// Block timestamp
+    pub timestamp: u64,
+}
+
+// =============================================================================
+// Liquidity Pool Events
+// =============================================================================
+
+/// Event emitted when liquidity is added to a pool
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct LiquidityAddedEvent {
+    pub provider: Address,
+    pub amount_a: i128,
+    pub amount_b: i128,
+    pub lp_minted: i128,
+    pub timestamp: u64,
+}
+
+/// Event emitted when liquidity is removed from a pool
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct LiquidityRemovedEvent {
+    pub provider: Address,
+    pub amount_a: i128,
+    pub amount_b: i128,
+    pub lp_burned: i128,
+    pub timestamp: u64,
+}
+
+/// Event emitted when a swap is executed against a pool
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SwapExecutedEvent {
+    pub swapper: Address,
+    pub token_in: Address,
+    pub token_out: Address,
+    pub amount_in: i128,
+    pub amount_out: i128,
+    pub fee_amount: i128,
     pub timestamp: u64,
 }
 

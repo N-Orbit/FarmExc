@@ -24,11 +24,19 @@ model User {
   pushSubscription Json?   @map("push_subscription")
 
   // Relations
-  createdProjects      Project[]            @relation("ProjectCreator")
+  createdProjects      Project[]               @relation("ProjectCreator")
   contributions        Contribution[]
   reputationHistory    ReputationHistory[]
   notificationSettings NotificationSetting?
   notifications        Notification[]
+  reputationActivities ReputationActivity[]    @relation("ReputationSubject")
+  reputationActsActor  ReputationActivity[]    @relation("ReputationActor")
+  reputationScoreModel ReputationScore?
+  endorsementsGiven    ReputationEndorsement[] @relation("Endorser")
+  endorsementsReceived ReputationEndorsement[] @relation("Endorsed")
+  sybilProfile         SybilProfile?
+  disputesFiled        ReputationDispute[]     @relation("Disputer")
+  disputesAgainst      ReputationDispute[]     @relation("Disputed")
 
   @@map("users")
 }
@@ -237,13 +245,13 @@ enum ClaimStatus {
 }
 
 model InsurancePolicy {
-  id             String    @id @default(cuid())
-  userId         String    @map("user_id")
-  poolId         String    @map("pool_id")
-  riskType       RiskType  @map("risk_type")
-  premium        Decimal   @map("premium")
-  coverageAmount Decimal   @map("coverage_amount")
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  poolId         String   @map("pool_id")
+  riskType       RiskType @map("risk_type")
+  premium        Decimal  @map("premium")
+  coverageAmount Decimal  @map("coverage_amount")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("insurance_policies")
 }
@@ -270,11 +278,11 @@ model Claim {
 }
 
 model ReinsuranceContract {
-  id             String   @id @default(cuid())
-  poolId         String   @map("pool_id")
-  coverageLimit  Decimal  @map("coverage_limit")
-  premiumRate    Decimal  @map("premium_rate")
-  createdAt      DateTime @default(now()) @map("created_at")
+  id            String   @id @default(cuid())
+  poolId        String   @map("pool_id")
+  coverageLimit Decimal  @map("coverage_limit")
+  premiumRate   Decimal  @map("premium_rate")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   @@map("reinsurance_contracts")
 }
@@ -282,44 +290,44 @@ model ReinsuranceContract {
 // Privacy Analytics Models
 
 model PrivacyBudget {
-  id             String   @id @default(cuid())
-  userId         String   @unique @map("user_id")
-  totalBudget    Float    @default(1.0) @map("total_budget")
-  usedBudget     Float    @default(0.0) @map("used_budget")
-  lastReset      DateTime @default(now()) @map("last_reset")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  userId      String   @unique @map("user_id")
+  totalBudget Float    @default(1.0) @map("total_budget")
+  usedBudget  Float    @default(0.0) @map("used_budget")
+  lastReset   DateTime @default(now()) @map("last_reset")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  queries        PrivacyBudgetQuery[]
+  queries PrivacyBudgetQuery[]
 
   @@map("privacy_budgets")
 }
 
 model PrivacyBudgetQuery {
-  id           String    @id @default(cuid())
-  budgetId     String    @map("budget_id")
-  budget       PrivacyBudget @relation(fields: [budgetId], references: [id])
-  queryId      String    @unique @map("query_id")
-  epsilon      Float
-  description  String?
-  status       QueryStatus @default(COMPLETED)
-  timestamp    DateTime  @default(now())
-  createdAt    DateTime  @default(now()) @map("created_at")
+  id          String        @id @default(cuid())
+  budgetId    String        @map("budget_id")
+  budget      PrivacyBudget @relation(fields: [budgetId], references: [id])
+  queryId     String        @unique @map("query_id")
+  epsilon     Float
+  description String?
+  status      QueryStatus   @default(COMPLETED)
+  timestamp   DateTime      @default(now())
+  createdAt   DateTime      @default(now()) @map("created_at")
 
   @@map("privacy_budget_queries")
 }
 
 model AnalyticsCache {
-  id           String   @id @default(cuid())
-  cacheKey     String   @unique @map("cache_key")
-  queryType    String   @map("query_type")
-  parameters   Json     // Query parameters
-  result       Json     // Differential privacy result
-  epsilon      Float
-  timestamp    DateTime @default(now())
-  expiresAt    DateTime @map("expires_at")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id         String   @id @default(cuid())
+  cacheKey   String   @unique @map("cache_key")
+  queryType  String   @map("query_type")
+  parameters Json // Query parameters
+  result     Json // Differential privacy result
+  epsilon    Float
+  timestamp  DateTime @default(now())
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([cacheKey])
   @@index([expiresAt])
@@ -330,4 +338,103 @@ enum QueryStatus {
   COMPLETED
   RESERVED
   FAILED
+}
+
+// ----------------------------------------------------
+// Decentralized Reputation Oracle Models
+// ----------------------------------------------------
+
+enum ActivityType {
+  SUCCESSFUL_TRANSACTION
+  FAILED_TRANSACTION
+  PEER_RATING
+  COMMUNITY_REVIEW
+  DISPUTE_WON
+  DISPUTE_LOST
+  HIGH_VALUE_CONTRIBUTION
+}
+
+model ReputationActivity {
+  id           String       @id @default(cuid())
+  subjectId    String       @map("subject_id")
+  subject      User         @relation("ReputationSubject", fields: [subjectId], references: [id])
+  actorId      String?      @map("actor_id")
+  actor        User?        @relation("ReputationActor", fields: [actorId], references: [id])
+  activityType ActivityType @map("activity_type")
+  value        Float
+  referenceId  String?      @map("reference_id")
+  occurredAt   DateTime     @map("occurred_at")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@index([subjectId])
+  @@index([subjectId, activityType])
+  @@index([occurredAt])
+  @@map("reputation_activities")
+}
+
+model ReputationScore {
+  id                     String   @id @default(cuid())
+  subjectId              String   @unique @map("subject_id")
+  subject                User     @relation(fields: [subjectId], references: [id])
+  compositeScore         Float    @map("composite_score")
+  successRateScore       Float    @map("success_rate_score")
+  peerRatingScore        Float    @map("peer_rating_score")
+  contributionSizeScore  Float    @map("contribution_size_score")
+  communityFeedbackScore Float    @map("community_feedback_score")
+  activityCount          Int      @map("activity_count")
+  lowConfidence          Boolean  @default(false) @map("low_confidence")
+  calculatedAt           DateTime @updatedAt @map("calculated_at")
+
+  @@index([compositeScore])
+  @@map("reputation_scores")
+}
+
+model ReputationEndorsement {
+  id         String   @id @default(cuid())
+  endorserId String   @map("endorser_id")
+  endorser   User     @relation("Endorser", fields: [endorserId], references: [id])
+  endorsedId String   @map("endorsed_id")
+  endorsed   User     @relation("Endorsed", fields: [endorsedId], references: [id])
+  weight     Float
+  context    String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@unique([endorserId, endorsedId])
+  @@map("reputation_endorsements")
+}
+
+enum DisputeStatus {
+  OPEN
+  RESOLVED_IN_FAVOR
+  RESOLVED_AGAINST
+  DISMISSED
+}
+
+model ReputationDispute {
+  id             String        @id @default(cuid())
+  disputerId     String        @map("disputer_id")
+  disputer       User          @relation("Disputer", fields: [disputerId], references: [id])
+  disputedId     String        @map("disputed_id")
+  disputed       User          @relation("Disputed", fields: [disputedId], references: [id])
+  referenceId    String?       @map("reference_id")
+  reason         String
+  status         DisputeStatus @default(OPEN)
+  resolutionNote String?       @map("resolution_note")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  resolvedAt     DateTime?     @map("resolved_at")
+
+  @@map("reputation_disputes")
+}
+
+model SybilProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique @map("user_id")
+  user            User     @relation(fields: [userId], references: [id])
+  riskScore       Float    @default(0.0) @map("risk_score")
+  isFlagged       Boolean  @default(false) @map("is_flagged")
+  heuristicsData  Json?    @map("heuristics_data")
+  lastEvaluatedAt DateTime @updatedAt @map("last_evaluated_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("sybil_profiles")
 }

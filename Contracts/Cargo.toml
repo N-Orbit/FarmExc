@@ -6,9 +6,10 @@ members = [
     "contracts/academy",
     "contracts/academy-rewards",
     "contracts/synthetic-assets",
+    "contracts/reputation_oracle",
 
     "contracts/tcr",
     "integration-tests",
-    "shared",
+    "shared", "contracts/reputation_oracle",
 ]
 resolver = "2"

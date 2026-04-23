@@ -17,6 +17,7 @@ import { CorrelationIdMiddleware } from './common/middleware/correlation-id.midd
 import { LoggingMiddleware } from './common/middleware/logging.middleware';
 import { AppLogger } from './common/logger/app.logger';
 import { AppCacheModule } from './cache/cache.module';
+import { NlpModule } from './nlp/nlp.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { AppCacheModule } from './cache/cache.module';
     InsuranceModule,
     AnalyticsModule,
     AppCacheModule,
+    NlpModule,
   ],
   controllers: [AppController, UserController],
   providers: [AppService, AppLogger],

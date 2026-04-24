@@ -11,8 +11,74 @@ export class UserType {
   @Field(() => Int)
   reputationScore: number;
 
+  @Field(() => [ProjectType], { nullable: true })
+  projects?: ProjectType[];
+
+  @Field(() => [ContributionType], { nullable: true })
+  contributions?: ContributionType[];
+
   @Field()
   createdAt: Date;
+}
+
+@ObjectType()
+export class ProjectType {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  contractId: string;
+
+  @Field()
+  title: string;
+
+  @Field({ nullable: true })
+  description: string;
+
+  @Field()
+  category: string;
+
+  @Field(() => Float)
+  goal: number;
+
+  @Field(() => Float)
+  currentFunds: number;
+
+  @Field()
+  deadline: Date;
+
+  @Field(() => UserType)
+  creator: UserType;
+
+  @Field(() => [ContributionType], { nullable: true })
+  contributions?: ContributionType[];
+
+  @Field(() => [MilestoneType], { nullable: true })
+  milestones?: MilestoneType[];
+
+  @Field()
+  createdAt: Date;
+}
+
+@ObjectType()
+export class ContributionType {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  transactionHash: string;
+
+  @Field(() => UserType)
+  investor: UserType;
+
+  @Field(() => ProjectType)
+  project: ProjectType;
+
+  @Field(() => Float)
+  amount: number;
+
+  @Field()
+  timestamp: Date;
 }
 
 @ObjectType()
@@ -62,3 +128,28 @@ export class PaginatedUsersType {
   @Field(() => Int)
   offset: number;
 }
+
+@ObjectType()
+export class MilestoneType {
+  @Field(() => ID)
+  id: string;
+
+  @Field()
+  title: string;
+
+  @Field({ nullable: true })
+  description: string;
+
+  @Field(() => Float)
+  fundingAmount: number;
+
+  @Field()
+  status: string;
+
+  @Field({ nullable: true })
+  completionDate: Date;
+
+  @Field()
+  createdAt: Date;
+}
+

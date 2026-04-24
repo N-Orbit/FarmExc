@@ -1499,3 +1499,27 @@ enum DocumentType {
   NATIONAL_ID
 }
 
+
+model FeatureFlag {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  enabled     Boolean  @default(false)
+  rules       Json?    // For user-targeted flags (e.g., { "userIds": ["..."], "roles": ["..."] })
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("feature_flags")
+}
+
+model FeatureFlagAnalytics {
+  id        String   @id @default(cuid())
+  flagName  String   @map("flag_name")
+  userId    String?  @map("user_id")
+  action    String   // e.g., "CHECK_ENABLED", "CHECK_DISABLED"
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([flagName])
+  @@map("feature_flag_analytics")
+}

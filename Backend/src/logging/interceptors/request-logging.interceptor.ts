@@ -118,6 +118,7 @@ export class RequestLoggingInterceptor implements NestInterceptor {
       url: request.url,
       path: request.route?.path || request.path,
       query: Object.keys(request.query).length > 0 ? request.query : undefined,
+      headers: request.headers,
       ip: context.trace.metadata.ip,
       userAgent: context.trace.metadata.userAgent,
       correlationId: context.correlationId,

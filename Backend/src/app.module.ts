@@ -61,6 +61,10 @@ import { PredictiveMaintenanceModule } from './predictive-maintenance/predictive
 import { SecretsManagementModule } from './secrets-management/secrets-management.module';
 import { TransactionQueueModule } from './transaction-queue/transaction-queue.module';
 import { LiquidityAggregationModule } from './liquidity-aggregation/liquidity-aggregation.module';
+import { FeatureFlagModule } from './feature-flags/feature-flag.module';
+import { BulkModule } from './bulk/bulk.module';
+
+
 
 
 @Module({
@@ -142,7 +146,8 @@ import { LiquidityAggregationModule } from './liquidity-aggregation/liquidity-ag
     PredictiveMaintenanceModule,
     SecretsManagementModule,
     LiquidityAggregationModule,
-
+    FeatureFlagModule,
+    BulkModule,
   ],
   controllers: [AppController, UserController, DocsController],
   providers: [AppService],

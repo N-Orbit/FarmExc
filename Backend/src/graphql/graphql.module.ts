@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
-import { GraphqlResolver } from './graphql.resolver';
+import { UserResolver, ProjectResolver, GraphqlResolver } from './graphql.resolver';
 import { GraphqlService } from './graphql.service';
 import { GraphqlComplexityGuard } from './graphql.complexity.guard';
 import { PrismaService } from '../prisma.service';
@@ -23,7 +23,15 @@ import { PrismaService } from '../prisma.service';
       context: ({ req, res }) => ({ req, res }),
     }),
   ],
-  providers: [GraphqlResolver, GraphqlService, GraphqlComplexityGuard, PrismaService],
+  providers: [
+    UserResolver,
+    ProjectResolver,
+    GraphqlResolver,
+    GraphqlService,
+    GraphqlComplexityGuard,
+    PrismaService,
+  ],
   exports: [GraphqlService],
 })
+
 export class GraphqlModule {}

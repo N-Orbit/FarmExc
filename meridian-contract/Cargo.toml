@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "contracts/token",
+    "contracts/trading",
+    "contracts/social_rewards",
+    "contracts/academy",
+    "contracts/academy-rewards",
+    "shared",
+]
+resolver = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

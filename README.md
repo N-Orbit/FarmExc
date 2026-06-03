@@ -1,255 +1,189 @@
-📜 Stellara AI Smart Contracts (Soroban)
+# ✺ MERIDIAN
+> *Where real-world effort meets on-chain value. Work. Earn. Grow.*
 
-Soroban smart contracts powering Stellara AI, a Web3 crypto learning and social trading platform built on the Stellar blockchain. These contracts provide decentralized services for education credentials, social rewards, messaging, and on-chain trading used by the Stellara backend and frontend applications.
+---
 
-This repository is intended for blockchain developers, protocol contributors, and the Stellara platform infrastructure, serving as the trust layer for learning achievements, engagement rewards, user interactions, and decentralized trading features.
+## What is MERIDIAN?
 
-🆕 Upgradeability & Governance
-NEW: All contracts now feature explicit upgradeability with on-chain governance support.
+MERIDIAN is a **productivity-powered on-chain economy** built on the Stellar blockchain. It transforms the work you already do — focus sessions, streaks, daily consistency — into verifiable on-chain progression, streaming payroll, and yield-backed rewards.
 
-✅ Multi-Signature Approval: Upgrades require M-of-N approvals (e.g., 2-of-3)
-✅ Timelock Delays: Prevents immediate execution (configurable: 1-24+ hours)
-✅ Role-Based Control: Admin, Approver, and Executor roles prevent single points of failure
-✅ Transparent Governance: All proposals tracked on-chain and auditable
-✅ Comprehensive Tests: 10+ test cases covering all upgrade scenarios
+No speculation. No trading. Just effort, rewarded.
 
-Documentation:
+Think of it as three things working as one:
 
-Upgradeability Design - Complete architecture & security analysis
-Governance User Guide - Step-by-step upgrade procedures
-Quick Reference - 30-second overview
-Implementation Summary - What was built
-Overview
-This repository contains four core smart contracts that power the Stellara ecosystem:
+- A **focus and habit engine** that turns deep work into XP and on-chain pet progression
+- A **payroll streaming protocol** that pays workers per second, not per month
+- A **no-loss reward pool** where consistent users compete for yield — never principal
 
-Trading Contract (✨ Now Upgradeable): Decentralized exchange functionality for trading cryptocurrency pairs
-Academy Contract: Credential management for course completion and learning achievements
-Social Rewards Contract: Engagement tracking and reward distribution for community participation
-Messaging Contract: Decentralized messaging between users with read status tracking
-Project Structure
-├── contracts/
-│   ├── trading/         # ✨ Upgradeable DEX trading contract
-│   ├── academy/         # ✨ NEW: Academy vesting & rewards contract
-│   │   ├── VESTING_DESIGN.md           # Vesting architecture & design
-│   │   ├── VESTING_QUICK_REFERENCE.md  # Quick reference guide
-│   │   ├── INTEGRATION_GUIDE.md        # Backend/frontend integration
-│   │   ├── DELIVERY_SUMMARY.md         # Project completion summary
-│   │   └── README.md                   # Academy contract overview
-│   ├── social_rewards/  # Engagement rewards contract
-│   └── messaging/       # P2P messaging contract
-├── shared/              # ✨ NEW: Shared governance module (reusable)
-│   └── src/governance.rs # Multi-sig upgrade governance
-├── Cargo.toml          # Workspace configuration
-├── UPGRADEABILITY.md   # Upgradeability design documentation
-├── GOVERNANCE_GUIDE.md # Step-by-step governance procedures
-├── QUICK_REFERENCE.md  # Quick reference card
-└── README.md           # This file
-Prerequisites
-Rust 1.70 or later
-Soroban SDK 20.5.0
-Stellar CLI tools
-Building
-# Build all contracts
-cargo build --release --target wasm32-unknown-unknown
+Everything is connected through a single wallet, a single identity, and a unified on-chain economy on Stellar.
 
-# Build specific contract
-cd contracts/trading
-cargo build --release --target wasm32-unknown-unknown
-Testing
-# Run all tests (including new governance tests)
-cargo test --all
+---
 
-# Run specific contract tests
-cd contracts/trading
-cargo test  # Includes 10+ upgradeability tests
-Governance & Upgradeability
-Quick Start
-All contracts now support governance-controlled upgrades:
+## Why Stellar?
 
-# 1. Initialize with governance roles
-stellar contract invoke --id $CONTRACT_ID --source admin -- \
-  init --admin $ADMIN --approvers [$A1,$A2,$A3] --executor $EXECUTOR
+MERIDIAN is purpose-built on Stellar because the chain was built for real people and real payments:
 
-# 2. Propose an upgrade
-stellar contract invoke --id $CONTRACT_ID --source admin -- \
-  propose_upgrade --new_contract_hash $HASH --description "..." \
-  --approvers [$A1,$A2,$A3] --approval_threshold 2 --timelock_delay 3600
+- **⚡ Fast** — 3–5 second finality, sessions and payroll confirmed instantly
+- **💸 Near-zero fees** — micro-rewards and per-second streaming are only viable here
+- **🌍 Global** — designed for the underbanked and emerging markets from day one
+- **🦀 Smart** — Soroban brings expressive Rust contracts to power complex logic
+- **🤝 Native assets** — XLM and custom tokens flow without bridges or wrappers
 
-# 3. Approvers vote (need 2 of 3)
-stellar contract invoke --id $CONTRACT_ID --source $APPROVER1 -- \
-  approve_upgrade --proposal_id 1
+---
 
-# 4. Wait for timelock, then execute
-stellar contract invoke --id $CONTRACT_ID --source $EXECUTOR -- \
-  execute_upgrade --proposal_id 1
-Governance Features
-✅ Multi-Sig Approval (M-of-N): e.g., 2-of-3 signers required
-✅ Timelock Delays: Safety period (1-24+ hours) before execution
-✅ Role-Based Control: Admin, Approver, Executor roles
-✅ Transparent: All proposals on-chain and queryable
-✅ Circuit Breakers: Rejection and cancellation mechanisms
-Documentation
-UPGRADEABILITY.md: 10+ sections covering:
+## The Three Pillars
 
-Architecture with diagrams
-Security safeguards explained
-Complete governance process flow
-Smart contract implementation details
-Testing & validation strategy
-GOVERNANCE_GUIDE.md: Practical guide with:
+---
 
-Step-by-step CLI examples
-Multi-signature approval workflow
-Timelock management
-Error handling & troubleshooting
-Emergency procedures
-QUICK_REFERENCE.md: Cheat sheet with:
+### 01 — FOCUS
+*Turn deep work into on-chain progression.*
 
-30-second overview
-Function reference
-Common scenarios
-Error codes
-Deployment
-Testnet Deployment
-Set up your Stellar CLI:
-stellar config network set testnet https://soroban-testnet.stellar.org
-Create a network configuration:
-stellar config set --scope global RPC_URL https://soroban-testnet.stellar.org
-stellar config set --scope global NETWORK_PASSPHRASE "Test SDF Network ; September 2015"
-Deploy contracts:
-# Build WASM binaries
-cargo build --release --target wasm32-unknown-unknown
+Set a focus timer — 10, 25, or 45 minutes — and stay present. When the session ends, your on-chain companion receives XP and your streak is preserved. Neglect it and health decays. Nurture it and watch it evolve through five stages — Egg, Baby, Teen, Adult, Elder — driven purely by real-world consistency.
 
-# Deploy trading contract
-stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/trading_contract.wasm \
-  --source account-name \
-  --network testnet
-Initialize contracts after deployment:
-# Initialize trading contract with governance
-stellar contract invoke \
-  --id CONTRACT_ADDRESS \
-  --source account-name \
-  --network testnet \
-  -- init \
-  --admin "$ADMIN_ADDRESS" \
-  --approvers '["$APPROVER1", "$APPROVER2", "$APPROVER3"]' \
-  --executor "$EXECUTOR_ADDRESS"
-Contract Descriptions
-Trading Contract ✨ (Upgradeable)
-Manages decentralized trading operations with governance support.
+**Key mechanics:**
+- XP earned per session, recorded on-chain via Soroban contract
+- Pet health decays every 24 hours — daily effort is required to maintain progress
+- Streak bonuses add XP multipliers for consecutive daily sessions
+- Night owl bonus (midnight–6 AM) applies a 1.1x XP multiplier
+- Supercharge mode streams XLM to a community yield pool in real time — pausing health decay and boosting XP
 
-Key Functions:
+**Supercharge tiers:**
 
-init(): Initialize with governance roles
-trade(): Execute a trade on specified pair with fee collection
-get_stats(): Retrieve trading statistics
-propose_upgrade(): Propose contract upgrade
-approve_upgrade(): Approve pending upgrade
-execute_upgrade(): Execute approved upgrade
-pause() / unpause(): Emergency pause functionality
-Governance Functions:
+| Tier | Rate | XP Multiplier |
+|---|---|---|
+| Gentle Flow | 1 XLM/mo | 1.2x |
+| Power Surge | 5 XLM/mo | 1.4x |
+| Max Overdrive | 10 XLM/mo | 1.7x |
 
-propose_upgrade(): Create upgrade proposal (Admin)
-approve_upgrade(): Approve proposal (Approver)
-reject_upgrade(): Reject proposal (Approver)
-execute_upgrade(): Execute approved upgrade (Executor)
-cancel_upgrade(): Cancel proposal (Admin)
-Academy Contract (✨ NEW: Vesting & Rewards)
-Manages educational credentials, achievements, and secure vesting of academy rewards.
+**Shop** — spend earned tokens on food, shields, energy drinks, revivals, and cosmetics. 10% of all shop transactions flow to the community yield pool.
 
-Two Core Features:
+---
 
-Vesting Module (NEW) - Time-based vesting of tokens/badges
+### 02 — STREAM
+*Payroll that flows like water — per second, not per month.*
 
-grant_vesting(): Create vesting schedule (admin only)
-claim(): Atomic claim of vested tokens (single-claim semantics)
-revoke(): Revoke grant with timelock protection
-get_vesting(): Query vesting schedule
-get_vested_amount(): Calculate current vested amount
-Credentials - Educational achievements
+MERIDIAN Stream is a payroll streaming protocol for the Stellar ecosystem. Employers deposit stablecoins and open a payment stream. Employees accrue earnings every second and withdraw at any time — no waiting for month-end, no banking delays, no middlemen.
 
-issue_credential(): Award credential to user (admin only)
-get_user_credentials(): Retrieve user's credentials
-verify_credential(): Verify a credential exists
-Vesting Features:
+Built for the millions of gig workers, freelancers, and remote employees in emerging markets who can't afford to wait 30 days to access money they've already earned.
 
-✅ Time-based vesting with cliff periods
-✅ Linear vesting after cliff
-✅ Single-claim semantics (prevents double-spend)
-✅ Governance revocation with 1+ hour timelock
-✅ Event emission for off-chain indexing
-✅ 18+ comprehensive tests
-Documentation:
+**How it works:**
+1. Employer deposits funds into a MERIDIAN Stream vault (Soroban contract)
+2. A per-second stream rate is set per employee
+3. Employees see their balance tick up in real time and withdraw anytime
+4. Sub-cent transaction fees on Stellar make micro-withdrawals practical
 
-VESTING_DESIGN.md - Complete technical design
-VESTING_QUICK_REFERENCE.md - Quick start
-INTEGRATION_GUIDE.md - Integration examples
-README.md - Academy contract overview
-Social Rewards Contract
-Tracks engagement and distributes rewards.
+**Supported assets:** XLM, USDC (Stellar), and any Stellar-issued stablecoin
 
-Key Functions:
+---
 
-init(): Initialize the contract
-record_engagement(): Record user engagement activity
-get_user_rewards(): Get user's reward balance and tier
-get_engagement_history(): Get user's engagement history
-claim_tier_reward(): Claim rewards based on tier
-Messaging Contract
-Enables decentralized P2P messaging.
+### 03 — POOL
+*A no-loss prize pool for consistent contributors.*
 
-Key Functions:
+Every week, MERIDIAN aggregates XP earned across the network. The top performers earn entries into a yield lottery — funded by the community supercharge streams and shop fees. The yield goes to one winner. The principal stays with everyone.
 
-init(): Initialize the contract
-send_message(): Send message to recipient
-mark_as_read(): Mark message as read
-get_messages(): Get user's messages (received/sent)
-get_unread_count(): Get count of unread messages
-get_stats(): Retrieve messaging statistics
-Environment Variables
-For deployment, set these environment variables:
+No one loses their stake. Ever.
 
-# Stellar account secret key
-export STELLAR_SECRET_KEY="your-secret-key"
+| Rank | Reward |
+|---|---|
+| Top 5 | Trophy NFT (Soroban-minted, monthly) |
+| Pool winner | Full weekly yield payout |
+| All participants | Principal fully preserved |
 
-# Network configuration (testnet by default)
-export SOROBAN_NETWORK="testnet"
-export SOROBAN_RPC_URL="https://soroban-testnet.stellar.org"
+---
 
-# Governance configuration
-export ADMIN_ADDRESS="G..."
-export APPROVER_1="G..."
-export APPROVER_2="G..."
-export APPROVER_3="G..."
-export EXECUTOR_ADDRESS="G..."
-Security Considerations
-✅ All contracts implement authentication via require_auth()
-✅ Admin functions protected with role verification
-✅ Contract storage uses instance storage for state management
-✅ NEW: Upgradeable via multi-sig governance (prevents rogue upgrades)
-✅ NEW: Timelock delays provide reaction window (1-24+ hours)
-✅ NEW: Transparent proposal system (all changes auditable)
-Ecosystem Repositories
-🌐 Frontend (Next.js): https://github.com/Dev-shamoo/Stellara_Ai
-⚙ Backend (NestJS): https://github.com/shamoo53/Stellara_Ai_backend
-⭐ Stellar Docs: https://developers.stellar.org/docs/smart-contracts/soroban/
+## Identity & Trust
 
-Contributing
-🤝 Contributing:
+Users who complete identity verification receive a verified badge on their leaderboard profile. Verification uses a privacy-preserving proof — no biometric data is stored by MERIDIAN. Verified users receive bonus XP multipliers and appear distinctly on the global leaderboard.
 
-Fork the repository
-Create a feature branch
-Submit a pull request
-Please ensure all tests pass and documentation is updated with your changes.
+The leaderboard is fully public. No wallet required to view rankings, pet stages, streaks, or verified status.
 
-Last Updated: January 22, 2026
-Version: 2.0 (with Upgradeability & Governance)
-Status: Production Ready Commit your changes git pull latest changes to avoid conflicts Submit a pull request Issues and feature requests are welcome.
+---
 
-When adding new features:
+## Tech Stack
 
-Create a new function in the appropriate contract
-Add corresponding tests
-Update this README with new function documentation
-Ensure all tests pass before submitting
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15 (App Router), React 19, Tailwind v4 |
+| Auth | Stellar Wallets Kit + embedded wallet support |
+| Blockchain | Stellar Network |
+| Contracts | Rust — Soroban smart contracts |
+| Payment streaming | Stellar payment channels + Soroban vault contracts |
+| Backend | Supabase (leaderboard, session sync) |
+| Notifications | Web Push API + scheduled triggers |
+| Animations | Framer Motion |
+
+---
+
+## Smart Contracts (Soroban / Rust)
+
+```
+contracts/
+├── focus_engine/       ← XP computation, session recording, pet state
+├── stream_vault/       ← Payroll deposit, per-second streaming, withdrawals
+├── prize_pool/         ← Yield aggregation, lottery resolution, NFT minting
+├── shop/               ← Item purchases, fee routing to pool
+└── identity/           ← Verified badge management
+```
+
+All contracts are written in Rust, compiled to WASM, and deployed on Stellar Soroban. Open-source and fully auditable. No admin upgrade keys on core contracts.
+
+---
+
+## Project Structure
+
+```
+meridian/
+├── contracts/          ← Soroban Rust contracts
+├── app/
+│   ├── src/
+│   │   ├── app/        ← Next.js App Router pages + API routes
+│   │   ├── components/ ← UI components (pet view, timer, stream dashboard)
+│   │   ├── hooks/      ← Stellar SDK + app-specific React hooks
+│   │   └── utils/      ← XP formulas, pet stage logic, stream calculators
+│   └── public/         ← Pet sprites, shop assets, icons
+└── sdk/                ← TypeScript helpers for integrators
+```
+
+---
+
+## Getting Started
+
+```bash
+git clone https://github.com/your-org/meridian.git
+cd meridian/app
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+**Required environment variables:** Stellar network config, Soroban RPC URL, Supabase URL + anon key, deployed contract addresses, WalletConnect project ID.
+
+---
+
+## Use Cases
+
+- **Remote workers** — get paid every second, withdraw when you need it
+- **Freelancers** — transparent, on-chain proof of work and payment
+- **Students & builders** — build focus habits and earn on-chain progression
+- **Communities** — run shared yield pools funded by collective productivity
+- **Emerging markets** — low-fee, real-time payroll where banking infrastructure is weak
+
+---
+
+## The Vision
+
+MERIDIAN exists for a simple reason — effort should be its own economy.
+
+The work you do every day has value. Your focus has value. Your consistency has value. MERIDIAN makes that value visible, portable, and rewarded — on a chain fast enough to keep up with real life.
+
+---
+
+## Organization
+
+**MERIDIAN** is maintained by a small core team and open to contributors across all three pillars. Each contract, each service, and each frontend module is independently contributable.
+
+Built on Stellar. Open by default. Rewarding by design.
+
+---
+
+MIT License

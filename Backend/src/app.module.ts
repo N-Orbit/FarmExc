@@ -58,8 +58,25 @@ import { ThrottleModule } from './throttle/throttle.module';
           AuditLog,
           VoiceJob,
         ],
-        synchronize: configService.get('NODE_ENV') === 'development',
+        // Schema is managed exclusively through migrations in every
+        // environment. `synchronize` is never enabled because it can silently
+        // drop and recreate tables.
+        synchronize: false,
+        migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
+        // Migrations are applied explicitly via the `migration:run` script,
+        // never automatically on boot.
+        migrationsRun: false,
         logging: configService.get('NODE_ENV') === 'development',
+        // Retry transient connection failures (e.g. PostgreSQL connection
+        // resets) on startup. TypeORM uses a fixed delay between attempts.
+        retryAttempts: 5,
+        retryDelay: 3000,
+        // Connection pool limits passed through to the underlying `pg` driver.
+        extra: {
+          max: 20,
+          min: 5,
+          idleTimeoutMillis: 30000,
+        },
       }),
     }),
 

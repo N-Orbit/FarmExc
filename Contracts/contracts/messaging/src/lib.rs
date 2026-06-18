@@ -1,6 +1,6 @@
 #![no_std]
 
-use shared::acl::ACL;
+use shared::acl::{ACL, ROLE_ADMIN, ROLE_APPROVER, ROLE_EXECUTOR, PERMISSION_PAUSE, PERMISSION_UNPAUSE, PERMISSION_SET_RATE, PERMISSION_PREMIUM, PERMISSION_MGR_ACL};
 use shared::circuit_breaker::{
     CircuitBreaker, CircuitBreakerConfig, CircuitBreakerState, PauseLevel,
 };
@@ -280,23 +280,14 @@ impl UpgradeableMessagingContract {
 
         env.storage().persistent().set(&init_key, &true);
 
-        let roles_key = symbol_short!("roles");
-        let mut roles = Map::new(&env);
-        roles.set(admin.clone(), GovernanceRole::Admin);
+        GovernanceManager::init_governance_roles(&env, admin.clone(), approvers.clone(), executor.clone());
 
-        for approver in approvers.iter() {
-            roles.set(approver, GovernanceRole::Approver);
-        }
-
-        roles.set(executor, GovernanceRole::Executor);
-        env.storage().persistent().set(&roles_key, &roles);
-
-        let admin_role = Symbol::new(&env, "admin");
-        ACL::create_role(&env, &admin_role);
-        ACL::assign_role(&env, &admin, &admin_role);
-        ACL::assign_permission(&env, &admin_role, &Symbol::new(&env, "set_rate"));
-        ACL::assign_permission(&env, &admin_role, &Symbol::new(&env, "premium"));
-        ACL::assign_permission(&env, &admin_role, &Symbol::new(&env, "manage_acl"));
+        // Assign additional permissions to admin role
+        ACL::assign_permission(&env, &ROLE_ADMIN, &PERMISSION_SET_RATE);
+        ACL::assign_permission(&env, &ROLE_ADMIN, &PERMISSION_PREMIUM);
+        ACL::assign_permission(&env, &ROLE_ADMIN, &PERMISSION_PAUSE);
+        ACL::assign_permission(&env, &ROLE_ADMIN, &PERMISSION_UNPAUSE);
+        ACL::assign_permission(&env, &ROLE_ADMIN, &PERMISSION_MGR_ACL);
 
         env.storage().persistent().set(
             &symbol_short!("stats"),
@@ -523,7 +514,7 @@ impl UpgradeableMessagingContract {
         level: PauseLevel,
     ) -> Result<(), MessagingError> {
         admin.require_auth();
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "pause"));
+        ACL::require_permission(&env, &admin, &PERMISSION_PAUSE);
         CircuitBreaker::set_pause_level(&env, admin, level);
         Ok(())
     }
@@ -534,7 +525,7 @@ impl UpgradeableMessagingContract {
         func_name: Symbol,
     ) -> Result<(), MessagingError> {
         admin.require_auth();
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "pause"));
+        ACL::require_permission(&env, &admin, &PERMISSION_PAUSE);
         CircuitBreaker::pause_function(&env, admin, func_name);
         Ok(())
     }
@@ -545,7 +536,7 @@ impl UpgradeableMessagingContract {
         func_name: Symbol,
     ) -> Result<(), MessagingError> {
         admin.require_auth();
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "unpause"));
+        ACL::require_permission(&env, &admin, &PERMISSION_UNPAUSE);
         CircuitBreaker::unpause_function(&env, admin, func_name);
         Ok(())
     }
@@ -579,7 +570,7 @@ impl UpgradeableMessagingContract {
     ) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "set_rate"));
+        ACL::require_permission(&env, &admin, &PERMISSION_SET_RATE);
 
         if window_secs == 0 || user_limit == 0 || global_limit == 0 || premium_user_limit == 0 {
             return Err(MessagingError::InvalidRateLimitConfig);
@@ -604,7 +595,7 @@ impl UpgradeableMessagingContract {
     ) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "premium"));
+        ACL::require_permission(&env, &admin, &PERMISSION_PREMIUM);
 
         let mut premium_users: Map<Address, bool> = env
             .storage()
@@ -626,7 +617,7 @@ impl UpgradeableMessagingContract {
     pub fn create_role(env: Env, admin: Address, role: Symbol) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
+        ACL::require_permission(&env, &admin, &PERMISSION_MGR_ACL);
         ACL::create_role(&env, &role);
         Ok(())
     }
@@ -639,7 +630,7 @@ impl UpgradeableMessagingContract {
     ) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
+        ACL::require_permission(&env, &admin, &PERMISSION_MGR_ACL);
         ACL::assign_role(&env, &user, &role);
         Ok(())
     }
@@ -652,7 +643,7 @@ impl UpgradeableMessagingContract {
     ) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
+        ACL::require_permission(&env, &admin, &PERMISSION_MGR_ACL);
         ACL::assign_permission(&env, &role, &permission);
         Ok(())
     }
@@ -665,7 +656,7 @@ impl UpgradeableMessagingContract {
     ) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
+        ACL::require_permission(&env, &admin, &PERMISSION_MGR_ACL);
         ACL::assign_permissions_batch(&env, &role, &permissions);
         Ok(())
     }
@@ -678,7 +669,7 @@ impl UpgradeableMessagingContract {
     ) -> Result<(), MessagingError> {
         admin.require_auth();
         require_initialized(&env)?;
-        ACL::require_permission(&env, &admin, &Symbol::new(&env, "manage_acl"));
+        ACL::require_permission(&env, &admin, &PERMISSION_MGR_ACL);
         ACL::set_parent_role(&env, &child, &parent);
         Ok(())
     }
@@ -704,17 +695,9 @@ impl UpgradeableMessagingContract {
 
     #[allow(dead_code)]
     fn require_admin_role(env: &Env, admin: &Address) -> Result<(), MessagingError> {
-        let roles: Map<Address, GovernanceRole> = env
-            .storage()
-            .persistent()
-            .get(&symbol_short!("roles"))
-            .ok_or(MessagingError::Unauthorized)?;
-
-        let role = roles
-            .get(admin.clone())
-            .ok_or(MessagingError::Unauthorized)?;
-
-        if role != GovernanceRole::Admin {
+        // Check if the user has the admin role via ACL
+        let user_roles = ACL::get_user_roles(env, admin);
+        if !user_roles.iter().any(|r| r == ROLE_ADMIN) {
             return Err(MessagingError::Unauthorized);
         }
 

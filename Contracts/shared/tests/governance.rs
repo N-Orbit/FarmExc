@@ -44,13 +44,8 @@ fn setup(env: &Env) -> Address {
 /// Write the role map exactly the way the production contracts do during `init`.
 /// Must be called inside an `env.as_contract` closure.
 fn set_roles(env: &Env, admin: &Address, approvers: &Vec<Address>, executor: &Address) {
-    let mut roles: Map<Address, GovernanceRole> = Map::new(env);
-    roles.set(admin.clone(), GovernanceRole::Admin);
-    for approver in approvers.iter() {
-        roles.set(approver, GovernanceRole::Approver);
-    }
-    roles.set(executor.clone(), GovernanceRole::Executor);
-    env.storage().persistent().set(&ROLES_KEY, &roles);
+    // Initialize governance roles via the new ACL-based system
+    GovernanceManager::init_governance_roles(env, admin.clone(), approvers.clone(), executor.clone());
 }
 
 /// Build a `Vec<Address>` of freshly generated approver addresses.
@@ -275,14 +270,11 @@ fn approver_not_in_proposal_list_is_unauthorized() {
     let outsider = Address::generate(&env);
 
     env.as_contract(&id, || {
-        let mut roles: Map<Address, GovernanceRole> = Map::new(&env);
-        roles.set(admin.clone(), GovernanceRole::Admin);
-        for a in approvers.iter() {
-            roles.set(a, GovernanceRole::Approver);
-        }
-        roles.set(outsider.clone(), GovernanceRole::Approver);
-        roles.set(executor.clone(), GovernanceRole::Executor);
-        env.storage().persistent().set(&ROLES_KEY, &roles);
+        set_roles(&env, &admin, &approvers, &executor);
+        // Also assign the outsider the approver role via ACL
+        use shared::acl::ROLE_APPROVER;
+        use shared::acl::ACL;
+        ACL::assign_role(&env, &outsider, &ROLE_APPROVER);
 
         let pid = GovernanceManager::propose_upgrade(
             &env,

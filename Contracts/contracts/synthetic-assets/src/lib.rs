@@ -1,7 +1,7 @@
 #![no_std]
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, Symbol,
+    contract, contracterror, contractimpl, contracttype, Address, Env, Symbol,
 };
 use shared::events::{
     extended_topics,
@@ -159,7 +159,6 @@ impl SyntheticAssetsContract {
         env.events().publish(
             (extended_topics::CDP_OPENED,),
             CdpOpenedEvent {
-                cdp_id: cdp_key.clone(),
                 owner: owner.clone(),
                 asset_symbol,
                 collateral_amount,
@@ -306,8 +305,8 @@ impl SyntheticAssetsContract {
         env.events().publish(
             (extended_topics::COLLATERAL_ADDED,),
             CollateralAddedEvent {
-                cdp_id: cdp_key,
                 owner,
+                asset_symbol,
                 amount,
                 new_ratio: cdp.collateral_ratio as u32,
                 timestamp: env.ledger().timestamp(),
@@ -363,7 +362,6 @@ impl SyntheticAssetsContract {
         env.events().publish(
             (extended_topics::CDP_LIQUIDATED,),
             CdpLiquidatedEvent {
-                cdp_id: cdp_key,
                 owner: cdp_owner,
                 liquidator,
                 asset_symbol,
@@ -400,7 +398,6 @@ impl SyntheticAssetsContract {
         env.events().publish(
             (extended_topics::CDP_CLOSED,),
             CdpClosedEvent {
-                cdp_id: cdp_key,
                 owner,
                 asset_symbol,
                 collateral_returned: returned,

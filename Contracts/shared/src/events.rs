@@ -582,7 +582,6 @@ pub struct AssetRegisteredEvent {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct CdpOpenedEvent {
-    pub cdp_id: Symbol,
     pub owner: Address,
     pub asset_symbol: Symbol,
     pub collateral_amount: i128,
@@ -593,7 +592,6 @@ pub struct CdpOpenedEvent {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct CdpClosedEvent {
-    pub cdp_id: Symbol,
     pub owner: Address,
     pub asset_symbol: Symbol,
     pub collateral_returned: i128,
@@ -604,8 +602,8 @@ pub struct CdpClosedEvent {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct CollateralAddedEvent {
-    pub cdp_id: Symbol,
     pub owner: Address,
+    pub asset_symbol: Symbol,
     pub amount: i128,
     pub new_ratio: u32,
     pub timestamp: u64,
@@ -615,7 +613,6 @@ pub struct CollateralAddedEvent {
 #[contracttype]
 #[derive(Clone, Debug)]
 pub struct CdpLiquidatedEvent {
-    pub cdp_id: Symbol,
     pub owner: Address,
     pub liquidator: Address,
     pub asset_symbol: Symbol,

@@ -66,11 +66,10 @@ fn make_approvers(env: &Env, n: u32) -> Vec<Address> {
 /// reaches the threshold — never before.
 #[test]
 fn fuzz_quorum_flips_exactly_at_threshold() {
-    let env = Env::default();
-    let id = setup(&env);
-
     for n in 1u32..=6 {
         for threshold in 1u32..=n {
+            let env = Env::default();
+            let id = setup(&env);
             let admin = Address::generate(&env);
             let executor = Address::generate(&env);
             let approvers = make_approvers(&env, n);

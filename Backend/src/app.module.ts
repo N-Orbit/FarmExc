@@ -26,7 +26,7 @@ import { LoginNonce } from './auth/entities/login-nonce.entity';
 import { RefreshToken } from './auth/entities/refresh-token.entity';
 import { ApiToken } from './auth/entities/api-token.entity';
 import { AuditModule } from './audit/audit.module';
-import { AuditLog } from './audit/audit.entity';
+import { AuditLog, AuditLogArchive } from './audit/audit.entity';
 import { VoiceJob } from './voice/entities/voice-job.entity';
 import { ThrottleModule } from './throttle/throttle.module';
 import { HealthModule } from './health/health.module';
@@ -58,6 +58,7 @@ import { HealthModule } from './health/health.module';
           RefreshToken,
           ApiToken,
           AuditLog,
+          AuditLogArchive,
           VoiceJob,
         ],
         synchronize: configService.get('NODE_ENV') === 'development',
